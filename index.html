@@ -1,0 +1,1884 @@
+<!doctype html>
+<html lang="pt-BR" :class="{ dark: isDark }">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBEX | Precificação de Serviços</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#f0fdfa",
+                100: "#ccfbf1",
+                400: "#2dd4bf",
+                500: "#14b8a6",
+                600: "#0d9488",
+                900: "#134e4a",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Lucide Icons (Browser Script) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.2s ease;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+
+      [v-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans antialiased h-screen overflow-hidden flex selection:bg-brand-500 selection:text-white"
+  >
+    <div id="app" v-cloak class="flex w-full h-full">
+      <!-- Global Settings Sidebar -->
+      <aside
+        class="w-72 bg-slate-50 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-800 flex flex-col h-full shrink-0 z-20 shadow-xl relative"
+      >
+        <div class="p-6 border-b border-slate-300 dark:border-slate-800">
+          <h1
+            class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-blue-500"
+          >
+            BBEX
+          </h1>
+          <p
+            class="text-xs text-slate-700 dark:text-slate-400 uppercase tracking-widest mt-1 font-semibold"
+          >
+            Gerenciador de Preços
+          </p>
+        </div>
+
+        <div class="p-6 flex-1 overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2
+              class="text-sm uppercase tracking-wider text-slate-700 dark:text-slate-400 font-semibold drop-shadow-sm flex items-center gap-2"
+            >
+              <i data-lucide="settings" class="w-4 h-4"></i> Taxas Globais
+            </h2>
+            <button
+              @click="isDark = !isDark"
+              class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
+            >
+              <span v-show="!isDark" class="flex"><i data-lucide="moon" class="w-4 h-4"></i></span>
+              <span v-show="isDark" class="flex"><i data-lucide="sun" class="w-4 h-4"></i></span>
+            </button>
+          </div>
+
+          <div class="space-y-5">
+            <div>
+              <label
+                class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                >Valor da Hora</label
+              >
+              <div class="relative">
+                <span
+                  class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
+                  >R$</span
+                >
+                <input
+                  type="number"
+                  v-model.number="globalParams.hourlyRate"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all shadow-inner"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                >Margem de Lucro (%)</label
+              >
+              <div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  v-model.number="globalParams.profitMargin"
+                  class="w-full h-2 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                />
+                <div class="mt-2 text-right text-sm font-medium text-brand-500">
+                  {{ globalParams.profitMargin }}%
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label
+                class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                >Taxa de Impostos (%)</label
+              >
+              <div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  v-model.number="globalParams.taxMargin"
+                  class="w-full h-2 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                />
+                <div class="mt-2 text-right text-sm font-medium text-brand-500">
+                  {{ globalParams.taxMargin }}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-8 border-t border-slate-300 dark:border-slate-800 pt-6"
+          >
+            <h2
+              class="text-sm uppercase tracking-wider text-slate-700 dark:text-slate-400 font-semibold mb-4 flex items-center gap-2"
+            >
+              <i data-lucide="users" class="w-4 h-4"></i> Clientes
+            </h2>
+
+            <ul class="space-y-1">
+              <li v-for="client in clients" :key="client.id">
+                <button
+                  @click="selectClient(client.id)"
+                  :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-between group', 
+                         selectedClientId === client.id ? 'bg-brand-500/10 text-brand-600 dark:text-brand-600 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200']"
+                >
+                  <span class="truncate">{{ client.name }}</span>
+                  <i
+                    data-lucide="chevron-right"
+                    class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                    :class="selectedClientId === client.id ? 'opacity-100 text-brand-600 dark:text-brand-400' : ''"
+                  ></i>
+                </button>
+              </li>
+              <li
+                v-if="clients.length === 0"
+                class="text-xs text-slate-700 dark:text-slate-400 italic px-3 py-2"
+              >
+                Nenhum cliente ainda.
+              </li>
+            </ul>
+
+            <button
+              @click="showNewClientModal = true"
+              class="mt-4 w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg border border-dashed border-slate-400 dark:border-slate-700 text-slate-700 dark:text-slate-400 hover:text-brand-600 dark:text-brand-400 hover:border-brand-500/50 hover:bg-brand-500/5 transition-all text-sm font-medium"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i> Novo Cliente
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="p-4 border-t border-slate-300 dark:border-slate-800 text-xs text-slate-600 text-center"
+        >
+          Dados salvos localmente no navegador
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main
+        class="flex-1 bg-slate-100 dark:bg-slate-950 flex flex-col h-full overflow-hidden relative"
+      >
+        <!-- Top header for selected client -->
+        <header
+          v-if="selectedClient"
+          class="h-20 border-b border-slate-300 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/50 backdrop-blur-md px-8 flex items-center justify-between shrink-0 z-10 sticky top-0"
+        >
+          <div>
+            <h2
+              class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3"
+            >
+              {{ selectedClient.name }}
+              <button
+                @click.stop="openEditClientModal"
+                class="text-slate-600 hover:text-brand-500 transition-colors p-1"
+                title="Editar Cliente"
+              >
+                <span><i data-lucide="edit-2" class="w-4 h-4"></i></span>
+              </button>
+              <button
+                @click.stop="confirmDeleteClient(selectedClient)"
+                class="text-slate-600 hover:text-red-400 transition-colors p-1"
+                title="Excluir Cliente"
+              >
+                <span><i data-lucide="trash-2" class="w-4 h-4"></i></span>
+              </button>
+            </h2>
+            <p
+              class="text-sm text-slate-700 dark:text-slate-400 mt-1"
+              v-if="selectedClient.description"
+            >
+              {{ selectedClient.description }}
+            </p>
+          </div>
+          <div>
+            <button
+              @click="openNewServiceModal"
+              class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20 focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Serviço
+            </button>
+          </div>
+        </header>
+
+        <!-- Empty State -->
+        <div
+          v-if="!selectedClient"
+          class="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-950 dark:to-slate-900"
+        >
+          <div
+            class="w-24 h-24 mb-6 rounded-full bg-slate-200 dark:bg-slate-800/50 border border-slate-400 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-400 shadow-2xl"
+          >
+            <i data-lucide="briefcase" class="w-10 h-10"></i>
+          </div>
+          <h3 class="text-xl font-medium text-slate-800 dark:text-slate-300">
+            Nenhum Cliente Selecionado
+          </h3>
+          <p
+            class="text-slate-700 dark:text-slate-400 mt-2 text-center max-w-md"
+          >
+            Selecione um cliente na barra lateral ou crie um novo para gerenciar
+            os preços de seus serviços.
+          </p>
+          <button
+            @click="showNewClientModal = true"
+            class="mt-8 flex items-center gap-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-700 text-slate-900 dark:text-white px-6 py-3 rounded-xl shadow-lg transition-all border border-slate-400 dark:border-slate-700 hover:border-slate-600"
+          >
+            <i data-lucide="plus" class="w-5 h-5"></i> Adicionar Cliente
+          </button>
+        </div>
+
+        <!-- Services List -->
+        <div v-if="selectedClient" class="flex-1 overflow-y-auto p-8 space-y-8">
+          <div
+            v-if="selectedClient.services.length === 0"
+            class="text-center py-20 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-2xl"
+          >
+            <p class="text-slate-700 dark:text-slate-400">
+              Nenhum serviço adicionado para este cliente ainda.
+            </p>
+          </div>
+
+          <!-- Service Card -->
+          <div
+            v-for="service in selectedClient.services"
+            :key="service.id"
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden group"
+          >
+            <!-- Card Header. One-time = Blueish, Recurring = Purpleish accents -->
+            <div
+              class="px-6 py-4 border-b border-slate-300 dark:border-slate-800 bg-slate-200 dark:bg-slate-800/20 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-slate-300/50 dark:hover:bg-slate-800/40 transition-colors"
+              @click="service.isCollapsed = !service.isCollapsed"
+            >
+              <div class="flex items-center gap-3">
+                <button
+                  class="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-200" :class="{ '-rotate-90': service.isCollapsed }"></i>
+                </button>
+                <div>
+                  <h3
+                    class="font-semibold text-lg text-slate-900 dark:text-slate-200 flex items-center gap-2"
+                  >
+                    {{ service.name }}
+                    <span
+                      :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold', 
+                        service.type === 'recurring' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20' : 'bg-brand-500/10 text-brand-700 dark:text-brand-400 border border-brand-500/20']"
+                    >
+                      {{ service.type === 'recurring' ? 'Pagamento recorrente' : 'Pagamento único' }}
+                    </span>
+                  </h3>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 text-sm" @click.stop>
+                <div v-show="service.isCollapsed" class="font-bold text-lg text-slate-900 dark:text-white mr-2 border-r border-slate-300 dark:border-slate-700 pr-4">
+                  {{ formatCurrency(calculateFinalPrice(service)) }}
+                </div>
+                
+                <!-- Inline Configs -->
+                <div class="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 shadow-sm mr-2" title="Parâmetros Individuais">
+                  <div class="flex items-center gap-1.5 rounded p-1 cursor-default" title="Valor da Hora (R$)">
+                    <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span class="text-[10px] text-slate-500 font-medium">R$</span>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{ service.hourlyRate }}</span>
+                  </div>
+                  <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 hidden sm:block"></div>
+                  <div class="flex items-center gap-1.5 rounded p-1 cursor-default" title="Margem de Lucro (%)">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{ service.profitMargin }}</span>
+                    <span class="text-[10px] text-slate-500 font-medium">%</span>
+                  </div>
+                  <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 hidden sm:block"></div>
+                  <div class="flex items-center gap-1.5 rounded p-1 cursor-default" title="Taxa de Impostos (%)">
+                    <i data-lucide="landmark" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{ service.taxMargin }}</span>
+                    <span class="text-[10px] text-slate-500 font-medium">%</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 cursor-default opacity-90" title="Considerar horas como lucro">
+                  <div class="relative flex items-center">
+                    <div
+                      class="w-8 h-4 rounded-full transition-colors"
+                      :class="service.disableLucroMargin ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'"
+                    ></div>
+                    <div
+                      class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm"
+                      :class="service.disableLucroMargin ? 'translate-x-4' : ''"
+                    ></div>
+                  </div>
+                  <span
+                    class="text-slate-700 dark:text-slate-400 select-none transition-colors text-sm"
+                    :class="service.disableLucroMargin ? 'text-amber-600 dark:text-amber-400/90' : ''"
+                  >
+                    Considerar horas como lucro
+                  </span>
+                </div>
+
+                <div class="w-px h-6 bg-slate-800"></div>
+
+                <button
+                  @click.stop="openEditServiceModal(service)"
+                  class="text-slate-700 dark:text-slate-400 hover:text-brand-500 transition-colors p-1"
+                  title="Editar Serviço"
+                >
+                  <span><i data-lucide="edit-2" class="w-4 h-4"></i></span>
+                </button>
+                <button
+                  @click.stop="confirmDeleteService(service)"
+                  class="text-slate-700 dark:text-slate-400 hover:text-red-400 transition-colors p-1"
+                  title="Excluir Serviço"
+                >
+                  <span><i data-lucide="trash-2" class="w-4 h-4"></i></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card Body: Grid -->
+            <div v-show="!service.isCollapsed" class="p-6 grid grid-cols-1 xl:grid-cols-12 gap-8">
+              <!-- Items inner table -->
+              <div class="xl:col-span-8 space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4
+                    class="text-sm font-medium tracking-wide text-slate-700 dark:text-slate-400"
+                  >
+                    Itens do Serviço
+                  </h4>
+                  <button
+                    @click="openItemModal(service.id)"
+                    class="text-xs font-medium text-brand-400 hover:text-brand-300 hover:bg-brand-400/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                  >
+                    <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Item
+                  </button>
+                </div>
+
+                <div
+                  class="bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-300 dark:border-slate-700/60 overflow-hidden"
+                >
+                  <table class="w-full text-sm text-left">
+                    <thead
+                      class="bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 text-xs uppercase border-b border-slate-300 dark:border-slate-700/60 font-semibold"
+                    >
+                      <tr>
+                        <th class="px-4 py-3">Item</th>
+                        <th class="px-4 py-3 w-32">Tipo</th>
+                        <th class="px-4 py-3 text-right w-24">Horas</th>
+                        <th class="px-4 py-3 text-right w-32">Custo Fixo</th>
+                        <th class="px-4 py-3 text-right w-32">Subtotal</th>
+                        <th class="px-4 py-3 w-24"></th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      class="divide-y divide-slate-300 dark:divide-slate-700/60 text-slate-800 dark:text-slate-200"
+                    >
+                      <tr
+                        v-for="item in service.items"
+                        :key="item.id"
+                        class="hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-colors"
+                      >
+                        <td class="px-4 py-3 font-medium">{{ item.name }}</td>
+                        <td class="px-4 py-3">
+                          <span
+                            v-if="item.type === 'hourly'"
+                            class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 uppercase"
+                            >Por Hora</span
+                          >
+                          <span
+                            v-else-if="item.type === 'buffer'"
+                            class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase whitespace-nowrap"
+                            >Ajuste</span
+                          >
+                          <span
+                            v-else
+                            class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase"
+                            >Custo Fixo</span
+                          >
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                          {{ item.type === 'hourly' ? item.value : '-' }}
+                        </td>
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                          <span v-if="item.type === 'fixed'">{{ formatCurrency(item.value) }}</span>
+                          <span v-else-if="item.type === 'buffer'">
+                            <span 
+                              v-if="calculateItemSubtotal(service, item) === 0" 
+                              class="line-through text-slate-400 dark:text-slate-500" 
+                              title="Meta ultrapassada pelos demais custos"
+                            >Meta: {{ formatCurrency(item.value) }}</span>
+                            <span v-else title="Preço Final Desejado">Meta: {{ formatCurrency(item.value) }}</span>
+                          </span>
+                          <span v-else>-</span>
+                        </td>
+                        <td
+                          class="px-4 py-3 text-right font-medium"
+                          :class="item.type === 'buffer' && calculateItemSubtotal(service, item) === 0 ? 'text-slate-400 dark:text-slate-500 opacity-50' : 'text-slate-900 dark:text-slate-200'"
+                          :title="item.type === 'buffer' && calculateItemSubtotal(service, item) === 0 ? 'O buffer não tem efeito porque os custos já excederam a meta' : ''"
+                        >
+                          {{ formatCurrency(calculateItemSubtotal(service, item)) }}
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="flex items-center justify-center gap-3">
+                            <button
+                              @click.stop="openEditItemModal(service.id, item)"
+                              class="text-slate-600 hover:text-brand-500 transition-colors"
+                              title="Editar Item"
+                            >
+                              <span><i data-lucide="edit-2" class="w-4 h-4"></i></span>
+                            </button>
+                            <button
+                              @click.stop="confirmDeleteItem(service, item)"
+                              class="text-slate-600 hover:text-red-400 transition-colors"
+                              title="Excluir Item"
+                            >
+                              <span><i data-lucide="x" class="w-4 h-4"></i></span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr v-if="service.items.length === 0">
+                        <td
+                          colspan="6"
+                          class="px-4 py-8 text-center text-slate-700 dark:text-slate-400 italic text-xs"
+                        >
+                          Nenhum item adicionado a este serviço.
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot
+                      class="bg-slate-50 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 font-medium border-t border-slate-300 dark:border-slate-700/60"
+                    >
+                      <tr>
+                        <td colspan="4" class="px-4 py-3">
+                          Total de Despesas Reais
+                        </td>
+                        <td class="px-4 py-3 text-right text-brand-600 dark:text-brand-400">
+                          {{ formatCurrency(calculateServiceTotalCosts(service))
+                          }}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Detalhamento do Preço Panel -->
+              <div class="xl:col-span-4 flex flex-col self-start xl:sticky xl:top-4 w-full">
+                <h4
+                  class="text-sm font-medium tracking-wide text-slate-700 dark:text-slate-400 mb-4"
+                >
+                  Detalhamento do Preço
+                </h4>
+                <div
+                  class="bg-slate-200 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-400 dark:border-slate-700/50 flex flex-col space-y-4 shadow-inner relative overflow-hidden"
+                >
+                  
+
+                  <div class="flex justify-between items-center relative z-10">
+                    <span class="text-slate-700 dark:text-slate-400 text-sm"
+                      >Custos Totais</span
+                    >
+                    <span class="font-medium text-slate-800 dark:text-slate-300"
+                      >{{ formatCurrency(calculateCustosParaPainel(service))
+                      }}</span
+                    >
+                  </div>
+
+                  <div class="flex justify-between items-center relative z-10">
+                    <div
+                      class="text-slate-700 dark:text-slate-400 text-sm flex items-center gap-1"
+                    >
+                      Lucro
+                      <span
+                        class="text-[10px] text-slate-700 dark:text-slate-400"
+                        >({{ service.disableLucroMargin ? 'Integral' :
+                        ((service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%') }})</span
+                      >
+                    </div>
+                    <span
+                      class="font-medium"
+                      :class="service.disableLucroMargin ? 'text-slate-600' : 'text-emerald-600 dark:text-emerald-400'"
+                    >
+                      {{ formatCurrency(calculateLucro(service)) }}
+                    </span>
+                  </div>
+
+                  <div class="flex justify-between items-center relative z-10">
+                    <div
+                      class="text-slate-700 dark:text-slate-400 text-sm flex items-center gap-1"
+                    >
+                      Impostos
+                      <span
+                        class="text-[10px] text-slate-700 dark:text-slate-400"
+                        >({{ service.taxMargin !== undefined ? service.taxMargin : globalParams.taxMargin }}%)</span
+                      >
+                    </div>
+                    <span class="font-medium text-rose-600 dark:text-rose-400"
+                      >{{ formatCurrency(calculateImpostos(service)) }}</span
+                    >
+                  </div>
+
+                  <div
+                    class="pt-4 border-t border-slate-400 dark:border-slate-700/50 mt-2 relative z-10"
+                  >
+                    <div class="flex justify-between items-end">
+                      <div>
+                        <span
+                          class="block text-xs uppercase tracking-wider text-slate-700 dark:text-slate-400 font-semibold mb-1"
+                          >Preço Final</span
+                        >
+                        <span
+                          v-if="service.type === 'recurring'"
+                          class="text-xs text-slate-700 dark:text-slate-400"
+                          >/ conta estimada</span
+                        >
+                      </div>
+                      <span class="text-2xl font-bold text-slate-900 dark:text-white">
+                        {{ formatCurrency(calculateFinalPrice(service)) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Check info block -->
+                <div
+                  class="mt-3 text-[10px] text-slate-600 flex items-start gap-1"
+                >
+                  <i data-lucide="info" class="w-3 h-3 shrink-0 mt-0.5"></i>
+                  <p>
+                    Preço calculado utilizando markup por dentro com base nos
+                    parâmetros.
+                    <span
+                      v-if="service.disableLucroMargin"
+                      class="text-amber-600 dark:text-amber-500/70"
+                      >As horas de trabalho atuam como lucro integral.</span
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </main>
+
+      <!-- Modal: Novo Cliente -->
+      <transition name="fade">
+        <div
+          v-if="showNewClientModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showNewClientModal = false"
+          ></div>
+          <!-- Modal body -->
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Criar Novo Cliente
+              </h3>
+              <button
+                @click="showNewClientModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Nome do Cliente</label
+                >
+                <input
+                  type="text"
+                  v-model="newClient.name"
+                  @keyup.enter="createClient"
+                  placeholder="ex. Acme Corp"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Descrição (Opcional)</label
+                >
+                <textarea
+                  v-model="newClient.description"
+                  rows="2"
+                  placeholder="Breves notas sobre o cliente..."
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                ></textarea>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showNewClientModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="createClient"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Criar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: New Service -->
+      <transition name="fade">
+        <div
+          v-if="showNewServiceModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showNewServiceModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Adicionar Serviço
+              </h3>
+              <button
+                @click="showNewServiceModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Nome do Serviço</label
+                >
+                <input
+                  type="text"
+                  v-model="newService.name"
+                  placeholder="ex. Implantação de Landing Page"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2"
+                  >Tipo de Serviço</label
+                >
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="newService.type"
+                      value="one-time"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-3 text-sm text-center border rounded-lg peer-checked:border-brand-500 peer-checked:bg-brand-500/10 peer-checked:text-brand-700 dark:peer-checked:text-brand-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                    >
+                      Pagamento Único
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="newService.type"
+                      value="recurring"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-3 text-sm text-center border rounded-lg peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-700 dark:peer-checked:text-purple-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                    >
+                      Recorrente (Mensal)
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <label
+                class="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg cursor-pointer hover:bg-amber-500/20 transition-colors"
+              >
+                <div class="relative flex items-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    v-model="newService.disableLucroMargin"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="w-4 h-4 rounded border border-amber-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-amber-500 peer-checked:border-amber-500 flex items-center justify-center"
+                  >
+                    <i
+                      data-lucide="check"
+                      class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
+                    ></i>
+                  </div>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-amber-700 dark:text-amber-200"
+                    >Considerar horas como lucro</span
+                  >
+                  <span
+                    class="block text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5 leading-relaxed"
+                    >Custos baseados em horas atuam exclusivamente como Lucro, ignorando a margem de lucro percentual.</span
+                  >
+                </div>
+              </label>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showNewServiceModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="createService"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Adicionar Serviço
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: New Item -->
+      <transition name="fade">
+        <div
+          v-if="showNewItemModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showNewItemModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Adicionar Serviço Item
+              </h3>
+              <button
+                @click="showNewItemModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Descrição do Item</label
+                >
+                <input
+                  type="text"
+                  v-model="newItem.name"
+                  @keyup.enter="createItem"
+                  placeholder="ex. Configuração do Servidor"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2"
+                  >Tipo de Custo</label
+                >
+                <div class="grid grid-cols-3 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="newItem.type"
+                      value="hourly"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-700 dark:peer-checked:text-blue-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="clock" class="w-4 h-4"></i> Horas
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="newItem.type"
+                      value="fixed"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="dollar-sign" class="w-4 h-4"></i> Custo Fixo
+                    </div>
+                  </label>
+                  <label :class="canAddBuffer(targetServiceIdForNewItem) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'" :title="!canAddBuffer(targetServiceIdForNewItem) ? 'Apenas um item de ajuste é permitido por serviço' : ''">
+                    <input
+                      type="radio"
+                      v-model="newItem.type"
+                      value="buffer"
+                      class="peer sr-only"
+                      :disabled="!canAddBuffer(targetServiceIdForNewItem)"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-700 dark:peer-checked:text-amber-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="target" class="w-4 h-4"></i> Ajuste (Buffer)
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-if="newItem.type === 'hourly'"
+                  >Horas Estimadas</label
+                >
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-else-if="newItem.type === 'buffer'"
+                  >Preço Final Desejado</label
+                >
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-else
+                  >Custo Fixo (Preço Real)</label
+                >
+                <div class="relative">
+                  <span
+                    v-if="newItem.type === 'fixed' || newItem.type === 'buffer'"
+                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
+                    >R$</span
+                  >
+                  <input
+                    type="number"
+                    step="0.01"
+                    v-model.number="newItem.value"
+                    @keyup.enter="createItem"
+                    :class="['w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-3',
+                           (newItem.type === 'fixed' || newItem.type === 'buffer') ? 'pl-9' : 'pl-3']"
+                  />
+                  <span
+                    v-if="newItem.type === 'hourly'"
+                    class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-700 dark:text-slate-400 text-sm"
+                    >h</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showNewItemModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="createItem"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Adicionar Item
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: Edit Client -->
+      <transition name="fade">
+        <div
+          v-if="showEditClientModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showEditClientModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Editar Cliente
+              </h3>
+              <button
+                @click="showEditClientModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Nome do Cliente</label
+                >
+                <input
+                  type="text"
+                  v-model="editClientData.name"
+                  @keyup.enter="saveEditClient"
+                  placeholder="ex. Acme Corp"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Descrição (Opcional)</label
+                >
+                <textarea
+                  v-model="editClientData.description"
+                  rows="2"
+                  placeholder="Breves notas sobre o cliente..."
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                ></textarea>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showEditClientModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="saveEditClient"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Salvar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: Edit Service -->
+      <transition name="fade">
+        <div
+          v-if="showEditServiceModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showEditServiceModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Editar Serviço
+              </h3>
+              <button
+                @click="showEditServiceModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Nome do Serviço</label
+                >
+                <input
+                  type="text"
+                  v-model="editServiceData.name"
+                  placeholder="ex. Implantação de Landing Page"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2"
+                  >Tipo de Serviço</label
+                >
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="editServiceData.type"
+                      value="one-time"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-3 text-sm text-center border rounded-lg peer-checked:border-brand-500 peer-checked:bg-brand-500/10 peer-checked:text-brand-700 dark:peer-checked:text-brand-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                    >
+                      Pagamento Único
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="editServiceData.type"
+                      value="recurring"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-3 text-sm text-center border rounded-lg peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-700 dark:peer-checked:text-purple-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                    >
+                      Recorrente (Mensal)
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2"
+                  >Parâmetros Financeiros</label
+                >
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Valor/h (R$)</label>
+                    <div class="relative">
+                      <span class="absolute inset-y-0 left-0 flex items-center pl-2 text-slate-700 dark:text-slate-400 text-xs">R$</span>
+                      <input type="number" step="0.01" v-model.number="editServiceData.hourlyRate" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 pl-7 pr-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Lucro (%)</label>
+                    <input type="number" step="0.1" v-model.number="editServiceData.profitMargin" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Imposto (%)</label>
+                    <input type="number" step="0.1" v-model.number="editServiceData.taxMargin" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                </div>
+              </div>
+
+              <label
+                class="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg cursor-pointer hover:bg-amber-500/20 transition-colors"
+              >
+                <div class="relative flex items-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    v-model="editServiceData.disableLucroMargin"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="w-4 h-4 rounded border border-amber-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-amber-500 peer-checked:border-amber-500 flex items-center justify-center"
+                  >
+                    <i
+                      data-lucide="check"
+                      class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
+                    ></i>
+                  </div>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-amber-700 dark:text-amber-200"
+                    >Considerar horas como lucro</span
+                  >
+                  <span
+                    class="block text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5 leading-relaxed"
+                    >Custos baseados em horas atuam exclusivamente como Lucro, ignorando a margem de lucro percentual.</span
+                  >
+                </div>
+              </label>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showEditServiceModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="saveEditService"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Salvar Serviço
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: Edit Item -->
+      <transition name="fade">
+        <div
+          v-if="showEditItemModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showEditItemModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Editar Serviço Item
+              </h3>
+              <button
+                @click="showEditItemModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Descrição do Item</label
+                >
+                <input
+                  type="text"
+                  v-model="editItemData.name"
+                  @keyup.enter="saveEditItem"
+                  placeholder="ex. Configuração do Servidor"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2"
+                  >Tipo de Custo</label
+                >
+                <div class="grid grid-cols-3 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="editItemData.type"
+                      value="hourly"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-700 dark:peer-checked:text-blue-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="clock" class="w-4 h-4"></i> Horas
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="editItemData.type"
+                      value="fixed"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="dollar-sign" class="w-4 h-4"></i> Custo Fixo
+                    </div>
+                  </label>
+                  <label :class="canAddBuffer(editItemServiceId, editItemData.id) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'" :title="!canAddBuffer(editItemServiceId, editItemData.id) ? 'Apenas um item de ajuste é permitido por serviço' : ''">
+                    <input
+                      type="radio"
+                      v-model="editItemData.type"
+                      value="buffer"
+                      class="peer sr-only"
+                      :disabled="!canAddBuffer(editItemServiceId, editItemData.id)"
+                    />
+                    <div
+                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-700 dark:peer-checked:text-amber-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
+                    >
+                      <i data-lucide="target" class="w-4 h-4"></i> Ajuste (Buffer)
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-if="editItemData.type === 'hourly'"
+                  >Horas Estimadas</label
+                >
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-else-if="editItemData.type === 'buffer'"
+                  >Preço Final Desejado</label
+                >
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  v-else
+                  >Custo Fixo (Preço Real)</label
+                >
+                <div class="relative">
+                  <span
+                    v-if="editItemData.type === 'fixed' || editItemData.type === 'buffer'"
+                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
+                    >R$</span
+                  >
+                  <input
+                    type="number"
+                    step="0.01"
+                    v-model.number="editItemData.value"
+                    @keyup.enter="saveEditItem"
+                    :class="['w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-3',
+                           (editItemData.type === 'fixed' || editItemData.type === 'buffer') ? 'pl-9' : 'pl-3']"
+                  />
+                  <span
+                    v-if="editItemData.type === 'hourly'"
+                    class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-700 dark:text-slate-400 text-sm"
+                    >h</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showEditItemModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="saveEditItem"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Salvar Item
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: Confirmation Delete -->
+      <transition name="fade">
+        <div
+          v-if="showDeleteModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="closeDeleteModal"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-red-500/30 dark:border-red-500/20 w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-start gap-4"
+            >
+              <div class="flex items-center gap-3 text-red-600 dark:text-red-400">
+                <div class="p-2 bg-red-100 dark:bg-red-500/10 rounded-full">
+                  <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                  Excluir {{ getDeleteEntityTypeName }}
+                </h3>
+              </div>
+              <button
+                @click="closeDeleteModal"
+                class="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors mt-1"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+              <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+                Tem certeza que deseja excluir <strong>{{ deleteTargetEntity?.name }}</strong>? Esta ação não poderá ser desfeita.
+              </p>
+              
+              <div v-if="deleteEntityType !== 'item'" class="bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/10 rounded-lg p-4 mt-4">
+                <label class="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
+                  Para confirmar, digite o nome do {{ getDeleteEntityTypeName.toLowerCase() }}:
+                </label>
+                <input
+                  type="text"
+                  v-model="deleteConfirmationInput"
+                  @keyup.enter="executeDelete"
+                  :placeholder="deleteTargetEntity?.name"
+                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent font-medium"
+                />
+                <p v-if="deleteError" class="text-xs text-red-500 mt-2 font-medium">
+                  O nome digitado não corresponde.
+                </p>
+              </div>
+            </div>
+            
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="closeDeleteModal"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="executeDelete"
+                :disabled="!isDeleteConfirmed"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-white transition-colors shadow flex items-center gap-2"
+                :class="isDeleteConfirmed ? 'bg-red-600 hover:bg-red-500' : 'bg-red-400 dark:bg-red-800/50 cursor-not-allowed opacity-70'"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </div>
+
+    <script>
+      const { createApp, nextTick } = Vue;
+
+      const app = createApp({
+        data() {
+          return {
+            isDark: true,
+            globalParams: {
+              hourlyRate: 60,
+              profitMargin: 50,
+              taxMargin: 15,
+            },
+            clients: [],
+
+            selectedClientId: null,
+
+            // Modals
+            showNewClientModal: false,
+            showNewServiceModal: false,
+            showNewItemModal: false,
+
+            // Forms
+            newClient: { name: "", description: "" },
+            newService: {
+              name: "",
+              type: "one-time",
+              disableLucroMargin: false,
+            },
+
+            targetServiceIdForNewItem: null,
+            newItem: { name: "", type: "hourly", value: null },
+
+            // Edit Forms
+            showEditClientModal: false,
+            editClientData: { id: "", name: "", description: "" },
+
+            showEditServiceModal: false,
+            editServiceData: { id: "", name: "", type: "one-time", disableLucroMargin: false, hourlyRate: 0, profitMargin: 0, taxMargin: 0 },
+
+            showEditItemModal: false,
+            editItemServiceId: null,
+            editItemData: { id: "", name: "", type: "hourly", value: null },
+
+            // Delete Confirmation Modal
+            showDeleteModal: false,
+            deleteEntityType: null, // 'client', 'service', 'item'
+            deleteTargetEntity: null,
+            deleteParentEntityId: null, // Needed for items
+            deleteConfirmationInput: "",
+            deleteError: false,
+          };
+        },
+        computed: {
+          selectedClient() {
+            return this.clients.find((c) => c.id === this.selectedClientId);
+          },
+          getDeleteEntityTypeName() {
+            if (this.deleteEntityType === 'client') return 'Cliente';
+            if (this.deleteEntityType === 'service') return 'Serviço';
+            if (this.deleteEntityType === 'item') return 'Item';
+            return '';
+          },
+          isDeleteConfirmed() {
+            if (!this.deleteTargetEntity) return false;
+            if (this.deleteEntityType === 'item') return true;
+            return this.deleteConfirmationInput.trim() === this.deleteTargetEntity.name.trim();
+          }
+        },
+        methods: {
+          // -- Core Math --
+          calculateItemSubtotal(service, item) {
+            if (item.type === "hourly") {
+              const rate = service.hourlyRate !== undefined ? service.hourlyRate : this.globalParams.hourlyRate;
+              return Number(item.value || 0) * rate;
+            }
+            if (item.type === "buffer") {
+              const targetFinalPrice = Number(item.value || 0);
+              const divisor = this.getDivisor(service);
+              
+              const otherCosts = (service.items || [])
+                .filter(i => i.id !== item.id && i.type !== "buffer")
+                .reduce((sum, i) => sum + this.calculateItemSubtotal(service, i), 0);
+                
+              const requiredSubtotal = (targetFinalPrice * divisor) - otherCosts;
+              return requiredSubtotal > 0 ? requiredSubtotal : 0;
+            }
+            return Number(item.value || 0);
+          },
+          calculateServiceTotalCosts(service) {
+            if (!service.items) return 0;
+            return service.items.reduce(
+              (sum, item) => sum + this.calculateItemSubtotal(service, item),
+              0,
+            );
+          },
+          getDivisor(service) {
+            const taxMargin = service.taxMargin !== undefined ? service.taxMargin : this.globalParams.taxMargin;
+            const profitMargin = service.profitMargin !== undefined ? service.profitMargin : this.globalParams.profitMargin;
+            const taxMarginDec = taxMargin / 100;
+            const profitMarginDec = service.disableLucroMargin ? 0 : profitMargin / 100;
+            return 1 - (taxMarginDec + profitMarginDec);
+          },
+          canAddBuffer(serviceId, currentItemId = null) {
+            if (!this.selectedClient) return false;
+            const service = this.selectedClient.services.find(s => s.id === serviceId);
+            if (!service || !service.items) return false;
+            
+            const existingBuffer = service.items.find(i => i.type === 'buffer');
+            if (!existingBuffer) return true; // No buffer exists yet
+            
+            // If editing the existing buffer item, allow it
+            if (currentItemId && existingBuffer.id === currentItemId) return true;
+            
+            return false;
+          },
+          calculateCustosParaPainel(service) {
+            const costs = this.calculateServiceTotalCosts(service);
+            if (this.getDivisor(service) <= 0) return costs;
+            
+            if (service.disableLucroMargin) {
+              if (!service.items) return 0;
+              return service.items.filter(i => i.type === 'fixed' || i.type === 'buffer').reduce((sum, item) => sum + this.calculateItemSubtotal(service, item), 0);
+            }
+            return costs;
+          },
+          calculateFinalPrice(service) {
+            const costs = this.calculateServiceTotalCosts(service);
+            if (costs === 0) return 0;
+
+            const divisor = this.getDivisor(service);
+
+            if (divisor <= 0) return costs; // Prevent bad math but show basic costs instead of R$ 0,00
+            return costs / divisor;
+          },
+          calculateImpostos(service) {
+            if (this.calculateFinalPrice(service) === 0 || this.getDivisor(service) <= 0) return 0;
+
+            const finalPrice = this.calculateFinalPrice(service);
+            const taxMargin = service.taxMargin !== undefined ? service.taxMargin : this.globalParams.taxMargin;
+            
+            return finalPrice * (taxMargin / 100);
+          },
+          calculateLucro(service) {
+            if (this.calculateFinalPrice(service) === 0 || this.getDivisor(service) <= 0) return 0;
+
+            if (service.disableLucroMargin) {
+              if (!service.items) return 0;
+              return service.items.filter(i => i.type === 'hourly').reduce((sum, item) => sum + this.calculateItemSubtotal(service, item), 0);
+            }
+
+            const finalPrice = this.calculateFinalPrice(service);
+            const profitMargin = service.profitMargin !== undefined ? service.profitMargin : this.globalParams.profitMargin;
+            
+            return finalPrice * (profitMargin / 100);
+          },
+
+          // -- Helpers --
+          formatCurrency(value) {
+            return new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(value || 0);
+          },
+          generateId() {
+            return Math.random().toString(36).substring(2, 9);
+          },
+
+          // -- Actions --
+          selectClient(id) {
+            this.selectedClientId = id;
+          },
+          createClient() {
+            if (!this.newClient.name.trim()) return;
+            const id = this.generateId();
+            this.clients.push({
+              id,
+              name: this.newClient.name,
+              description: this.newClient.description,
+              services: [],
+            });
+            this.newClient = { name: "", description: "" };
+            this.showNewClientModal = false;
+            this.selectedClientId = id;
+            this.refreshIcons();
+          },
+
+          openNewServiceModal() {
+            this.newService = {
+              name: "",
+              type: "one-time",
+              disableLucroMargin: false,
+            };
+            this.showNewServiceModal = true;
+          },
+          createService() {
+            if (!this.newService.name.trim() || !this.selectedClient) return;
+            this.selectedClient.services.push({
+              id: this.generateId(),
+              name: this.newService.name,
+              type: this.newService.type,
+              disableLucroMargin: this.newService.disableLucroMargin,
+              profitMargin: this.globalParams.profitMargin,
+              taxMargin: this.globalParams.taxMargin,
+              hourlyRate: this.globalParams.hourlyRate,
+              isCollapsed: false,
+              items: [],
+            });
+            this.showNewServiceModal = false;
+            this.refreshIcons();
+          },
+
+          openItemModal(serviceId) {
+            this.targetServiceIdForNewItem = serviceId;
+            this.newItem = { name: "", type: "hourly", value: null };
+            this.showNewItemModal = true;
+          },
+          createItem() {
+            if (
+              !this.newItem.name.trim() ||
+              !this.targetServiceIdForNewItem ||
+              !this.selectedClient
+            )
+              return;
+            const service = this.selectedClient.services.find(
+              (s) => s.id === this.targetServiceIdForNewItem,
+            );
+            if (service) {
+              service.items.push({
+                id: this.generateId(),
+                name: this.newItem.name,
+                type: this.newItem.type,
+                value: Number(this.newItem.value || 0),
+              });
+            }
+            this.showNewItemModal = false;
+            this.refreshIcons();
+          },
+
+          // -- Delete Confirmation Logic --
+          confirmDeleteClient(client) {
+            this.deleteEntityType = 'client';
+            this.deleteTargetEntity = client;
+            this.deleteParentEntityId = null;
+            this.openDeleteModal();
+          },
+          confirmDeleteService(service) {
+            this.deleteEntityType = 'service';
+            this.deleteTargetEntity = service;
+            this.deleteParentEntityId = this.selectedClientId;
+            this.openDeleteModal();
+          },
+          confirmDeleteItem(service, item) {
+            this.deleteEntityType = 'item';
+            this.deleteTargetEntity = item;
+            this.deleteParentEntityId = service.id;
+            this.openDeleteModal();
+          },
+          openDeleteModal() {
+            this.deleteConfirmationInput = '';
+            this.deleteError = false;
+            this.showDeleteModal = true;
+          },
+          closeDeleteModal() {
+            this.showDeleteModal = false;
+            setTimeout(() => {
+              this.deleteEntityType = null;
+              this.deleteTargetEntity = null;
+              this.deleteParentEntityId = null;
+            }, 300); // Wait for transition
+          },
+          executeDelete() {
+            if (!this.isDeleteConfirmed) {
+              this.deleteError = true;
+              return;
+            }
+            
+            if (this.deleteEntityType === 'client') {
+              this.clients = this.clients.filter((c) => c.id !== this.deleteTargetEntity.id);
+              if (this.selectedClientId === this.deleteTargetEntity.id) this.selectedClientId = null;
+            }
+            else if (this.deleteEntityType === 'service') {
+              const client = this.clients.find(c => c.id === this.deleteParentEntityId);
+              if (client) {
+                client.services = client.services.filter(s => s.id !== this.deleteTargetEntity.id);
+              }
+            }
+            else if (this.deleteEntityType === 'item') {
+              const client = this.clients.find(c => c.id === this.selectedClientId);
+              if (client) {
+                const service = client.services.find(s => s.id === this.deleteParentEntityId);
+                if (service) {
+                  service.items = service.items.filter(i => i.id !== this.deleteTargetEntity.id);
+                }
+              }
+            }
+            
+            this.closeDeleteModal();
+          },
+
+          // -- Edit Actions --
+          openEditClientModal() {
+            if (this.selectedClient) {
+              this.editClientData = { ...this.selectedClient };
+              this.showEditClientModal = true;
+            }
+          },
+          saveEditClient() {
+            if (!this.editClientData.name.trim()) return;
+            const client = this.clients.find(c => c.id === this.editClientData.id);
+            if (client) {
+              client.name = this.editClientData.name;
+              client.description = this.editClientData.description;
+            }
+            this.showEditClientModal = false;
+            this.refreshIcons();
+          },
+
+          openEditServiceModal(service) {
+            this.editServiceData = { ...service };
+            this.showEditServiceModal = true;
+          },
+          saveEditService() {
+            if (!this.editServiceData.name.trim() || !this.selectedClient) return;
+            const service = this.selectedClient.services.find(s => s.id === this.editServiceData.id);
+            if (service) {
+              service.name = this.editServiceData.name;
+              service.type = this.editServiceData.type;
+              service.disableLucroMargin = this.editServiceData.disableLucroMargin;
+              service.hourlyRate = this.editServiceData.hourlyRate;
+              service.profitMargin = this.editServiceData.profitMargin;
+              service.taxMargin = this.editServiceData.taxMargin;
+            }
+            this.showEditServiceModal = false;
+            this.refreshIcons();
+          },
+
+          openEditItemModal(serviceId, item) {
+            this.editItemServiceId = serviceId;
+            this.editItemData = { ...item };
+            this.showEditItemModal = true;
+          },
+          saveEditItem() {
+            if (!this.editItemData.name.trim() || !this.editItemServiceId || !this.selectedClient) return;
+            const service = this.selectedClient.services.find(s => s.id === this.editItemServiceId);
+            if (service) {
+              const item = service.items.find(i => i.id === this.editItemData.id);
+              if (item) {
+                item.name = this.editItemData.name;
+                item.type = this.editItemData.type;
+                item.value = Number(this.editItemData.value || 0);
+              }
+            }
+            this.showEditItemModal = false;
+            this.refreshIcons();
+          },
+
+          // -- Persistence --
+          saveData() {
+            const data = {
+              globalParams: this.globalParams,
+              clients: this.clients,
+              isDark: this.isDark,
+            };
+            localStorage.setItem("bbexPricingManager", JSON.stringify(data));
+          },
+          loadData() {
+            const raw = localStorage.getItem("bbexPricingManager");
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (parsed.isDark !== undefined) this.isDark = parsed.isDark;
+                if (parsed.globalParams)
+                  this.globalParams = {
+                    ...this.globalParams,
+                    ...parsed.globalParams,
+                  };
+                if (parsed.clients) {
+                  // MIGRATION: Fix margins for pre-existing services
+                  parsed.clients.forEach(c => {
+                    if (c.services) {
+                      c.services.forEach(s => {
+                        if (s.profitMargin === undefined) s.profitMargin = this.globalParams.profitMargin;
+                        if (s.taxMargin === undefined) s.taxMargin = this.globalParams.taxMargin;
+                        if (s.hourlyRate === undefined) s.hourlyRate = this.globalParams.hourlyRate;
+                        if (s.isCollapsed === undefined) s.isCollapsed = false;
+                      });
+                    }
+                  });
+                  this.clients = parsed.clients;
+                }
+              } catch (e) {
+                console.error("Failed to parse local storage", e);
+              }
+            }
+          },
+          refreshIcons() {
+            nextTick(() => {
+              if (window.lucide) {
+                window.lucide.createIcons();
+              }
+            });
+          },
+        },
+        mounted() {
+          this.loadData();
+          document.documentElement.className = this.isDark ? "dark" : "";
+          this.refreshIcons();
+        },
+        watch: {
+          isDark(val) {
+            document.documentElement.className = val ? "dark" : "";
+            this.saveData();
+          },
+          globalParams: {
+            deep: true,
+            handler() {
+              this.saveData();
+            },
+          },
+          clients: {
+            deep: true,
+            handler() {
+              this.saveData();
+            },
+          },
+          showNewClientModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showNewServiceModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showNewItemModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showEditClientModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showEditServiceModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showEditItemModal(val) {
+            if (val) this.refreshIcons();
+          },
+          selectedClientId() {
+            this.refreshIcons();
+          },
+        },
+      });
+
+      app.mount("#app");
+
+      // Initial icons
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    </script>
+  </body>
+</html>
