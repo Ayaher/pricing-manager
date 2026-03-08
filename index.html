@@ -410,12 +410,21 @@
                   >
                     Itens do Serviço
                   </h4>
-                  <button
-                    @click="openItemModal(service.id)"
-                    class="text-xs font-medium text-brand-400 hover:text-brand-300 hover:bg-brand-400/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
-                  >
-                    <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Item
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="canAddBuffer(service.id)"
+                      @click="openBufferModal(service.id)"
+                      class="text-xs font-medium text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                    >
+                      <i data-lucide="target" class="w-3 h-3"></i> Adicionar Ajuste
+                    </button>
+                    <button
+                      @click="openItemModal(service.id)"
+                      class="text-xs font-medium text-brand-400 hover:text-brand-300 hover:bg-brand-400/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                    >
+                      <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Item
+                    </button>
+                  </div>
                 </div>
 
                 <div
@@ -544,7 +553,7 @@
                         <td class="px-4 py-3">
                           <div class="flex items-center justify-center gap-3">
                             <button
-                              @click.stop="openEditItemModal(service.id, item)"
+                              @click.stop="openEditBufferModal(service.id, item)"
                               class="text-amber-600/70 hover:text-amber-600 dark:text-amber-500/70 dark:hover:text-amber-400 transition-colors"
                               title="Editar Item"
                             >
@@ -908,7 +917,7 @@
               </button>
             </div>
             <div class="p-6 space-y-5">
-              <div v-show="newItem.type !== 'buffer'">
+              <div>
                 <label
                   class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
                   >Descrição do Item</label
@@ -954,20 +963,6 @@
                       <i data-lucide="dollar-sign" class="w-4 h-4"></i> Custo Fixo
                     </div>
                   </label>
-                  <label :class="canAddBuffer(targetServiceIdForNewItem) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'" :title="!canAddBuffer(targetServiceIdForNewItem) ? 'Apenas um item de ajuste é permitido por serviço' : ''">
-                    <input
-                      type="radio"
-                      v-model="newItem.type"
-                      value="buffer"
-                      class="peer sr-only"
-                      :disabled="!canAddBuffer(targetServiceIdForNewItem)"
-                    />
-                    <div
-                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-700 dark:peer-checked:text-amber-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
-                    >
-                      <i data-lucide="target" class="w-4 h-4"></i> Ajuste (Buffer)
-                    </div>
-                  </label>
                 </div>
               </div>
 
@@ -979,17 +974,12 @@
                 >
                 <label
                   class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
-                  v-else-if="newItem.type === 'buffer'"
-                  >Preço Final Desejado</label
-                >
-                <label
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
                   v-else
                   >Custo Fixo (Preço Real)</label
                 >
                 <div class="relative">
                   <span
-                    v-if="newItem.type === 'fixed' || newItem.type === 'buffer'"
+                    v-if="newItem.type === 'fixed'"
                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
                     >R$</span
                   >
@@ -999,7 +989,7 @@
                     v-model.number="newItem.value"
                     @keyup.enter="createItem"
                     :class="['w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-3',
-                           (newItem.type === 'fixed' || newItem.type === 'buffer') ? 'pl-9' : 'pl-3']"
+                           newItem.type === 'fixed' ? 'pl-9' : 'pl-3']"
                   />
                   <span
                     v-if="newItem.type === 'hourly'"
@@ -1277,7 +1267,7 @@
               </button>
             </div>
             <div class="p-6 space-y-5">
-              <div v-show="editItemData.type !== 'buffer'">
+              <div>
                 <label
                   class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
                   >Descrição do Item</label
@@ -1323,20 +1313,6 @@
                       <i data-lucide="dollar-sign" class="w-4 h-4"></i> Custo Fixo
                     </div>
                   </label>
-                  <label :class="canAddBuffer(editItemServiceId, editItemData.id) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'" :title="!canAddBuffer(editItemServiceId, editItemData.id) ? 'Apenas um item de ajuste é permitido por serviço' : ''">
-                    <input
-                      type="radio"
-                      v-model="editItemData.type"
-                      value="buffer"
-                      class="peer sr-only"
-                      :disabled="!canAddBuffer(editItemServiceId, editItemData.id)"
-                    />
-                    <div
-                      class="p-2 text-xs text-center border rounded-lg peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-700 dark:peer-checked:text-amber-400 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex flex-col items-center justify-center gap-1 shadow-sm h-full"
-                    >
-                      <i data-lucide="target" class="w-4 h-4"></i> Ajuste (Buffer)
-                    </div>
-                  </label>
                 </div>
               </div>
 
@@ -1348,17 +1324,12 @@
                 >
                 <label
                   class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
-                  v-else-if="editItemData.type === 'buffer'"
-                  >Preço Final Desejado</label
-                >
-                <label
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
                   v-else
                   >Custo Fixo (Preço Real)</label
                 >
                 <div class="relative">
                   <span
-                    v-if="editItemData.type === 'fixed' || editItemData.type === 'buffer'"
+                    v-if="editItemData.type === 'fixed'"
                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
                     >R$</span
                   >
@@ -1368,7 +1339,7 @@
                     v-model.number="editItemData.value"
                     @keyup.enter="saveEditItem"
                     :class="['w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-3',
-                           (editItemData.type === 'fixed' || editItemData.type === 'buffer') ? 'pl-9' : 'pl-3']"
+                           editItemData.type === 'fixed' ? 'pl-9' : 'pl-3']"
                   />
                   <span
                     v-if="editItemData.type === 'hourly'"
@@ -1392,6 +1363,144 @@
                 class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
               >
                 Salvar Item
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: New Buffer -->
+      <transition name="fade">
+        <div
+          v-if="showNewBufferModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showNewBufferModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-amber-500/30 dark:border-amber-500/20 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="target" class="w-5 h-5 text-amber-500"></i> Adicionar Ajuste (Buffer)
+              </h3>
+              <button
+                @click="showNewBufferModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Preço Final Desejado</label
+                >
+                <div class="relative">
+                  <span
+                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
+                    >R$</span
+                  >
+                  <input
+                    type="number"
+                    step="0.01"
+                    v-model.number="newBuffer.value"
+                    @keyup.enter="createBuffer"
+                    class="w-full pl-9 pr-3 bg-slate-200 dark:bg-slate-800 border border-amber-400/50 dark:border-amber-700/50 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Insira aqui qual o valor do contrato ou meta de venda. O sistema calculará o preço de ajuste automaticamente.</p>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showNewBufferModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="createBuffer"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-amber-600 hover:bg-amber-500 transition-colors shadow"
+              >
+                Adicionar Ajuste
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal: Edit Buffer -->
+      <transition name="fade">
+        <div
+          v-if="showEditBufferModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showEditBufferModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-amber-500/30 dark:border-amber-500/20 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="target" class="w-5 h-5 text-amber-500"></i> Editar Ajuste (Buffer)
+              </h3>
+              <button
+                @click="showEditBufferModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-5">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Preço Final Desejado</label
+                >
+                <div class="relative">
+                  <span
+                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-700 dark:text-slate-400"
+                    >R$</span
+                  >
+                  <input
+                    type="number"
+                    step="0.01"
+                    v-model.number="editBufferData.value"
+                    @keyup.enter="saveEditBuffer"
+                    class="w-full pl-9 pr-3 bg-slate-200 dark:bg-slate-800 border border-amber-400/50 dark:border-amber-700/50 rounded-lg py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Insira aqui qual o valor do contrato ou meta de venda. O sistema calculará o preço de ajuste automaticamente.</p>
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showEditBufferModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="saveEditBuffer"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-amber-600 hover:bg-amber-500 transition-colors shadow"
+              >
+                Salvar Ajuste
               </button>
             </div>
           </div>
@@ -1495,6 +1604,7 @@
             showNewClientModal: false,
             showNewServiceModal: false,
             showNewItemModal: false,
+            showNewBufferModal: false,
 
             // Forms
             newClient: { name: "", description: "" },
@@ -1506,6 +1616,7 @@
 
             targetServiceIdForNewItem: null,
             newItem: { name: "", type: "hourly", value: null },
+            newBuffer: { value: null },
 
             // Edit Forms
             showEditClientModal: false,
@@ -1515,8 +1626,10 @@
             editServiceData: { id: "", name: "", type: "one-time", disableLucroMargin: false, hourlyRate: 0, profitMargin: 0, taxMargin: 0 },
 
             showEditItemModal: false,
+            showEditBufferModal: false,
             editItemServiceId: null,
             editItemData: { id: "", name: "", type: "hourly", value: null },
+            editBufferData: { id: "", value: null },
 
             // Delete Confirmation Modal
             showDeleteModal: false,
@@ -1693,7 +1806,7 @@
           },
           createItem() {
             if (
-              (this.newItem.type !== 'buffer' && !this.newItem.name.trim()) ||
+              !this.newItem.name.trim() ||
               !this.targetServiceIdForNewItem ||
               !this.selectedClient
             )
@@ -1704,12 +1817,32 @@
             if (service) {
               service.items.push({
                 id: this.generateId(),
-                name: this.newItem.type === 'buffer' ? 'Ajuste de Preço' : this.newItem.name,
+                name: this.newItem.name,
                 type: this.newItem.type,
                 value: Number(this.newItem.value || 0),
               });
             }
             this.showNewItemModal = false;
+            this.refreshIcons();
+          },
+
+          openBufferModal(serviceId) {
+            this.targetServiceIdForNewItem = serviceId;
+            this.newBuffer = { value: null };
+            this.showNewBufferModal = true;
+          },
+          createBuffer() {
+            if (!this.targetServiceIdForNewItem || !this.selectedClient) return;
+            const service = this.selectedClient.services.find(s => s.id === this.targetServiceIdForNewItem);
+            if (service) {
+              service.items.push({
+                id: this.generateId(),
+                name: 'Ajuste de Preço',
+                type: 'buffer',
+                value: Number(this.newBuffer.value || 0),
+              });
+            }
+            this.showNewBufferModal = false;
             this.refreshIcons();
           },
 
@@ -1817,17 +1950,35 @@
             this.showEditItemModal = true;
           },
           saveEditItem() {
-            if ((this.editItemData.type !== 'buffer' && !this.editItemData.name.trim()) || !this.editItemServiceId || !this.selectedClient) return;
+            if (!this.editItemData.name.trim() || !this.editItemServiceId || !this.selectedClient) return;
             const service = this.selectedClient.services.find(s => s.id === this.editItemServiceId);
             if (service) {
               const item = service.items.find(i => i.id === this.editItemData.id);
               if (item) {
-                item.name = this.editItemData.type === 'buffer' ? 'Ajuste de Preço' : this.editItemData.name;
+                item.name = this.editItemData.name;
                 item.type = this.editItemData.type;
                 item.value = Number(this.editItemData.value || 0);
               }
             }
             this.showEditItemModal = false;
+            this.refreshIcons();
+          },
+
+          openEditBufferModal(serviceId, item) {
+            this.editItemServiceId = serviceId;
+            this.editBufferData = { id: item.id, value: item.value };
+            this.showEditBufferModal = true;
+          },
+          saveEditBuffer() {
+            if (!this.editItemServiceId || !this.selectedClient) return;
+            const service = this.selectedClient.services.find(s => s.id === this.editItemServiceId);
+            if (service) {
+              const item = service.items.find(i => i.id === this.editBufferData.id);
+              if (item) {
+                item.value = Number(this.editBufferData.value || 0);
+              }
+            }
+            this.showEditBufferModal = false;
             this.refreshIcons();
           },
 
