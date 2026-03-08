@@ -384,6 +384,13 @@
                 <div class="w-px h-6 bg-slate-800"></div>
 
                 <button
+                  @click.stop="openDuplicateServiceModal(service)"
+                  class="text-slate-700 dark:text-slate-400 hover:text-blue-500 transition-colors p-1"
+                  title="Duplicar Serviço"
+                >
+                  <span><i data-lucide="copy" class="w-4 h-4"></i></span>
+                </button>
+                <button
                   @click.stop="openEditServiceModal(service)"
                   class="text-slate-700 dark:text-slate-400 hover:text-brand-500 transition-colors p-1"
                   title="Editar Serviço"
@@ -1092,6 +1099,69 @@
         </div>
       </transition>
 
+      </transition>
+
+      <!-- Modal: Duplicate Service -->
+      <transition name="fade">
+        <div
+          v-if="showDuplicateServiceModal"
+          class="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            @click="showDuplicateServiceModal = false"
+          ></div>
+          <div
+            class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2"
+          >
+            <div
+              class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="copy" class="w-5 h-5 text-brand-500"></i> Duplicar Serviço
+              </h3>
+              <button
+                @click="showDuplicateServiceModal = false"
+                class="text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
+                  >Nome do Novo Serviço</label
+                >
+                <input
+                  type="text"
+                  v-model="duplicateServiceName"
+                  @keyup.enter="confirmDuplicateService"
+                  placeholder="Nome do serviço duplicado"
+                  class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+            </div>
+            <div
+              class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
+            >
+              <button
+                @click="showDuplicateServiceModal = false"
+                class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="confirmDuplicateService"
+                class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+              >
+                Duplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- Modal: Edit Service -->
       <transition name="fade">
         <div
@@ -1631,6 +1701,11 @@
             editItemData: { id: "", name: "", type: "hourly", value: null },
             editBufferData: { id: "", value: null },
 
+            // Duplicate Service Modal
+            showDuplicateServiceModal: false,
+            targetServiceIdForDuplication: null,
+            duplicateServiceName: "",
+
             // Delete Confirmation Modal
             showDeleteModal: false,
             deleteEntityType: null, // 'client', 'service', 'item'
@@ -1796,6 +1871,35 @@
               items: [],
             });
             this.showNewServiceModal = false;
+            this.refreshIcons();
+          },
+
+          openDuplicateServiceModal(service) {
+            this.targetServiceIdForDuplication = service.id;
+            this.duplicateServiceName = service.name + " (Cópia)";
+            this.showDuplicateServiceModal = true;
+          },
+          confirmDuplicateService() {
+            if (!this.duplicateServiceName.trim() || !this.selectedClient || !this.targetServiceIdForDuplication) return;
+            
+            const originalService = this.selectedClient.services.find(s => s.id === this.targetServiceIdForDuplication);
+            if (originalService) {
+              const duplicatedService = JSON.parse(JSON.stringify(originalService));
+              duplicatedService.id = this.generateId();
+              duplicatedService.name = this.duplicateServiceName;
+              duplicatedService.isCollapsed = false;
+              
+              // Generate new IDs for items
+              if (duplicatedService.items) {
+                duplicatedService.items.forEach(item => {
+                  item.id = this.generateId();
+                });
+              }
+
+              this.selectedClient.services.push(duplicatedService);
+            }
+
+            this.showDuplicateServiceModal = false;
             this.refreshIcons();
           },
 
