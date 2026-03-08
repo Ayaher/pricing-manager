@@ -172,8 +172,33 @@
             </div>
           </div>
 
+          <div class="mt-4 px-3 border-t border-slate-300 dark:border-slate-800 pt-4">
+            <ul class="space-y-1">
+              <li>
+                <button
+                  @click="switchView('dashboard')"
+                  :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 group', 
+                         currentView === 'dashboard' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
+                >
+                  <i data-lucide="layout-dashboard" class="w-4 h-4" :class="currentView === 'dashboard' ? 'text-brand-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'"></i>
+                  Dashboard
+                </button>
+              </li>
+              <li>
+                <button
+                  @click="switchView('formulas')"
+                  :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 group', 
+                         currentView === 'formulas' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
+                >
+                  <i data-lucide="calculator" class="w-4 h-4" :class="currentView === 'formulas' ? 'text-brand-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'"></i>
+                  Entenda o Cálculo
+                </button>
+              </li>
+            </ul>
+          </div>
+
           <div
-            class="mt-8 border-t border-slate-300 dark:border-slate-800 pt-6"
+            class="mt-6 border-t border-slate-300 dark:border-slate-800 pt-6"
           >
             <h2
               class="text-sm uppercase tracking-wider text-slate-700 dark:text-slate-400 font-semibold mb-4 flex items-center gap-2"
@@ -184,7 +209,7 @@
             <ul class="space-y-1">
               <li v-for="client in clients" :key="client.id">
                 <button
-                  @click="selectClient(client.id)"
+                  @click="selectClient(client.id); switchView('dashboard')"
                   :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-between group', 
                          selectedClientId === client.id ? 'bg-brand-500/10 text-brand-600 dark:text-brand-600 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200']"
                 >
@@ -224,6 +249,8 @@
       <main
         class="flex-1 bg-slate-100 dark:bg-slate-950 flex flex-col h-full overflow-hidden relative"
       >
+        <!-- Dashboard View -->
+        <div v-show="currentView === 'dashboard'" class="flex-col flex w-full h-full overflow-hidden">
         <!-- Top header for selected client -->
         <header
           v-if="selectedClient"
@@ -700,9 +727,119 @@
               </div>
             </div>
           </div>
+          </div>
+        </div> <!-- End Dashboard View -->
 
+        <!-- Formulas View -->
+        <div v-if="currentView === 'formulas'" class="flex-1 overflow-y-auto w-full h-full p-8 md:p-12 lg:p-16 max-w-4xl mx-auto text-slate-800 dark:text-slate-200">
+          
+          <div class="space-y-10 pb-20">
+            <!-- Header -->
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 text-sm font-semibold tracking-wide uppercase mb-4">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Metodologia BBEX
+              </div>
+              <h1 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Como funciona o cálculo?</h1>
+              <p class="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                A BBEX utiliza a lógica de <strong>Markup por dentro</strong> para precificar serviços. Isso garante que a margem de lucro e os impostos que você define sejam reais e absolutos em relação ao preço faturado.
+              </p>
+            </div>
 
+            <!-- Formula Section -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-300 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+                  <i data-lucide="function-square" class="w-5 h-5"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white">A Fórmula Principal</h2>
+              </div>
+              
+              <p class="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                Para calcular o Preço Final de um serviço, o sistema agrupa todos os custos reais na base e divide o total pela diferença percentual exigida pelo seu negócio.
+              </p>
+
+              <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center overflow-x-auto mb-8">
+                <div class="font-mono text-lg md:text-xl font-medium text-slate-800 dark:text-slate-200 inline-flex flex-col items-center">
+                  <div class="flex items-center gap-4">
+                    <span class="text-brand-600 dark:text-brand-400 font-bold whitespace-nowrap">Preço Final</span>
+                    <span class="text-slate-400">=</span>
+                    <div class="flex flex-col items-center">
+                      <span class="border-b-2 border-slate-300 dark:border-slate-700 pb-1 px-4 tracking-wide whitespace-nowrap">Custos Totais</span>
+                      <span class="pt-1 px-4 space-x-2 whitespace-nowrap">
+                        <span>1</span>
+                        <span>-</span>
+                        <span class="text-emerald-600 dark:text-emerald-500">(Lucro %</span>
+                        <span>+</span>
+                        <span class="text-rose-600 dark:text-rose-500">Imposto %)</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="font-semibold text-slate-900 dark:text-white text-lg mb-3">O problema do "Markup por Fora"</h3>
+              <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                Muitas empresas cometem o erro de pegar um custo de R$ 100 e adicionar os 20% de lucro por cima (chegando a R$ 120). Mas observe a matemática: se você vender por R$ 120 e amanhã precisar tirar os mesmos 20% desse valor já "faturado"... 20% de R$ 120 = R$ 24! Subtraindo isso dos R$ 120, restam apenas R$ 96 - ou seja, seu custo original não se pagou.
+              </p>
+              
+              <div class="flex items-start gap-3 bg-brand-50 dark:bg-brand-500/10 p-4 rounded-xl border border-brand-200 dark:border-brand-500/20">
+                <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0 mt-0.5"></i>
+                <p class="text-sm text-brand-800 dark:text-brand-300">
+                  <strong>Pelo nosso método</strong>: Dividindo R$ 100 por (1 - 0.20), o preço vai para R$ 125. Fazendo a prova real: Tirar 20% de lucro de R$ 125 dá R$ 25... e sobram exatamente os R$ 100 que cobrem seus custos primários. Operação blindada!
+                </p>
+              </div>
+            </div>
+
+            <!-- Buffer Section -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden">
+              <div class="absolute -right-6 -top-6 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"></div>
+              
+              <div class="flex items-center gap-3 mb-6 relative">
+                <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="target" class="w-5 h-5"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white">O "Ajuste" (Buffer)</h2>
+              </div>
+              
+              <p class="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed relative">
+                O Ajuste é um item especial inventado para sanar a seguinte necessidade: "Preciso que este serviço ou contrato bata um preço final de R$ 1.500 cravados, mas a soma matemática das horas e dos custos ainda aponta para R$ 800. Como fecho a diferença sem errar minhas margens?"
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-6 relative">
+                <div class="space-y-4">
+                  <h3 class="font-semibold text-slate-900 dark:text-white">Como Preenchemos a Lacuna?</h3>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">
+                    Não basta simplesmente dizer que sua margem agora magicamente aumentou, nem colocar a diferença de R$ 700 como um "custo fantasma". Se jogássemos R$ 700 cravados na planilha de custos, o markup iria incidir sobre esses 700 e o preço final explodiria muito acima da meta de 1.500.
+                  </p>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">
+                    O sistema faz a engenharia reversa. Multiplicamos a lacuna restante pela margem de redução dos tributos e do seu lucro. O valor encontrado é um subtotal "desinflado" — que, ao passar pela máquina normal de markup, se infla até trancar a porta exata da sua Meta Desejada.
+                  </p>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col justify-center">
+                  <div class="space-y-4 font-mono text-sm text-slate-800 dark:text-slate-300">
+                    <div>
+                      <span class="text-amber-600 dark:text-amber-500 font-semibold mb-1 block">1. Calcule a diferença absoluta:</span>
+                      <div class="pl-4 border-l-2 border-slate-300 dark:border-slate-700">Lacuna = Meta Desejada - Preço Sugerido (S/Buffer)</div>
+                    </div>
+                    <div>
+                      <span class="text-amber-600 dark:text-amber-500 font-semibold mb-1 block">2. Desconte lucro e impostos da lacuna:</span>
+                      <div class="pl-4 border-l-2 border-slate-300 dark:border-slate-700">Custo do Buffer = Lacuna * (1 - Total Margens%)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-6 flex items-center justify-center pt-6 border-t border-slate-200 dark:border-slate-800">
+                <p class="text-xs text-slate-500 text-center uppercase tracking-wider font-semibold">
+                  A Matemática nunca mente!
+                </p>
+              </div>
+            </div>
+
+          </div>
         </div>
+
       </main>
 
       <!-- Modal: Novo Cliente -->
@@ -1106,8 +1243,6 @@
             </div>
           </div>
         </div>
-      </transition>
-
       </transition>
 
       <!-- Modal: Duplicate Service -->
@@ -1724,6 +1859,7 @@
             deleteError: false,
 
             // UI states
+            currentView: "dashboard", // 'dashboard' or 'formulas'
             hoveredServiceCostsId: null,
           };
         },
@@ -1744,6 +1880,16 @@
           }
         },
         methods: {
+          switchView(view) {
+            this.currentView = view;
+            if (view === 'formulas') {
+              this.selectedClientId = null;
+            }
+            nextTick(() => {
+              this.refreshIcons();
+            });
+          },
+
           // -- Core Math --
           calculateItemSubtotal(service, item) {
             if (item.type === "hourly") {
