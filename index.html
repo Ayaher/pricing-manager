@@ -578,7 +578,9 @@
                       </tr>
                     </tbody>
                     <tfoot
-                      class="bg-slate-50 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 font-medium border-t border-slate-300 dark:border-slate-700/60"
+                      @mouseenter="hoveredServiceCostsId = service.id"
+                      @mouseleave="hoveredServiceCostsId = null"
+                      class="bg-slate-50 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 font-medium border-t border-slate-300 dark:border-slate-700/60 transition-colors duration-200 cursor-default hover:bg-slate-100 dark:hover:bg-slate-700/50"
                     >
                       <tr>
                         <td colspan="4" class="px-4 py-3">
@@ -607,11 +609,18 @@
                 >
                   
 
-                  <div class="flex justify-between items-center relative z-10">
-                    <span class="text-slate-700 dark:text-slate-400 text-sm"
+                  <div 
+                    class="flex justify-between items-center relative z-10 p-2 -mx-2 rounded-lg transition-colors duration-200"
+                    :class="hoveredServiceCostsId === service.id ? 'bg-brand-50 dark:bg-brand-500/10' : ''"
+                  >
+                    <span 
+                      class="text-sm transition-colors duration-200 text-slate-700 dark:text-slate-400"
+                      :class="hoveredServiceCostsId === service.id ? 'font-semibold text-brand-700 dark:text-brand-300' : ''"
                       >Custos Totais</span
                     >
-                    <span class="font-medium text-slate-800 dark:text-slate-300"
+                    <span 
+                      class="font-medium transition-colors duration-200 text-slate-800 dark:text-slate-300"
+                      :class="hoveredServiceCostsId === service.id ? 'text-brand-700 dark:text-brand-400 font-bold' : ''"
                       >{{ formatCurrency(calculateCustosParaPainel(service))
                       }}</span
                     >
@@ -1713,6 +1722,9 @@
             deleteParentEntityId: null, // Needed for items
             deleteConfirmationInput: "",
             deleteError: false,
+
+            // UI states
+            hoveredServiceCostsId: null,
           };
         },
         computed: {
