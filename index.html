@@ -287,13 +287,13 @@
               <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardReceitaRecorrente)">{{ formatCurrency(dashboardReceitaRecorrente) }}</p>
             </div>
 
-            <!-- A Receber -->
+            <!-- Receita Avulsa -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
               <div class="flex items-center gap-3 mb-4">
                 <div class="p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400 shadow-inner">
                   <i data-lucide="wallet" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-slate-700 dark:text-slate-300 font-semibold">A Receber</h3>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold" title="Soma de serviços de pagamento único ainda não pagos">Receita Avulsa</h3>
               </div>
               <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardAReceber)">{{ formatCurrency(dashboardAReceber) }}</p>
             </div>
@@ -332,8 +332,8 @@
                   </div>
                   <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
                   <div class="flex flex-col items-end">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">A Receber</span>
-                    <span class="font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Avulso</span>
+                    <span class="font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" title="Serviços pontuais pendentes">
                       {{ formatCurrency(getClientAReceber(client)) }}
                     </span>
                   </div>
@@ -402,7 +402,7 @@
                       :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold ml-1', 
                         service.paid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20']"
                     >
-                      {{ service.paid ? 'Pago' : 'A Receber' }}
+                      {{ service.paid ? 'Pago' : 'Pendente' }}
                     </span>
                   </h3>
                 </div>
@@ -1197,7 +1197,7 @@
                   >
                   <span
                     class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
-                    >Serviços pagos não entram no cálculo "A Receber" do Dashboard.</span
+                    >Serviços pagos não entram no cálculo "Receita Avulsa" do Dashboard.</span
                   >
                 </div>
               </label>
@@ -1639,7 +1639,7 @@
                   >
                   <span
                     class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
-                    >Serviços pagos não entram no cálculo "A Receber" do Dashboard.</span
+                    >Serviços pagos não entram no cálculo "Receita Avulsa" do Dashboard.</span
                   >
                 </div>
               </label>
