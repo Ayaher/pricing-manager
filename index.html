@@ -258,14 +258,14 @@
         <!-- Dashboard / Empty State -->
         <div
           v-if="!selectedClient"
-          class="flex-1 overflow-y-auto scrollbar-hide p-8 max-w-6xl mx-auto w-full"
+          class="flex-1 overflow-y-auto scrollbar-hide p-8 max-w-7xl mx-auto w-full"
         >
           <div class="mb-8">
             <h2 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3">Visão Geral</h2>
             <p class="text-slate-600 dark:text-slate-400 text-lg">Métricas consolidadas de todos os seus clientes e serviços.</p>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-12">
             <!-- Total Clients -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
               <div class="flex items-center gap-3 mb-4">
@@ -288,15 +288,15 @@
               <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardReceitaRecorrente)">{{ formatCurrency(dashboardReceitaRecorrente) }}</p>
             </div>
 
-            <!-- Receita Avulsa -->
+            <!-- Lucro Mensal -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
               <div class="flex items-center gap-3 mb-4">
-                <div class="p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400 shadow-inner">
-                  <i data-lucide="wallet" class="w-6 h-6"></i>
+                <div class="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-inner">
+                  <i data-lucide="trending-up" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-slate-700 dark:text-slate-300 font-semibold" title="Soma de serviços de pagamento único ainda não pagos">Receita Avulsa</h3>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold" title="Soma do lucro de todos os serviços recorrentes ativos">Lucro Mensal</h3>
               </div>
-              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardAReceber)">{{ formatCurrency(dashboardAReceber) }}</p>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardLucroRecorrente)">{{ formatCurrency(dashboardLucroRecorrente) }}</p>
             </div>
 
             <!-- Total Taxes Recorrentes -->
@@ -308,6 +308,17 @@
                 <h3 class="text-slate-700 dark:text-slate-300 font-semibold">Impostos Recorrentes</h3>
               </div>
               <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardImpostosRecorrentes)">{{ formatCurrency(dashboardImpostosRecorrentes) }}</p>
+            </div>
+
+            <!-- Receita Avulsa -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400 shadow-inner">
+                  <i data-lucide="wallet" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold" title="Soma de serviços de pagamento único ainda não pagos">Receita Avulsa</h3>
+              </div>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardAReceber)">{{ formatCurrency(dashboardAReceber) }}</p>
             </div>
           </div>
 
@@ -324,11 +335,25 @@
                   <h4 class="font-medium text-slate-900 dark:text-white">{{ client.name }}</h4>
                   <p class="text-sm text-slate-500 mt-0.5">{{ client.services.length }} serviço(s) faturados</p>
                 </div>
-                <div class="flex items-center gap-6">
+                <div class="flex items-center gap-5">
                   <div class="flex flex-col items-end">
                     <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Mensal</span>
                     <span class="font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                       {{ formatCurrency(getClientReceitaRecorrente(client)) }}
+                    </span>
+                  </div>
+                  <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                  <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Lucro</span>
+                    <span class="font-bold text-emerald-700 dark:text-emerald-400 transition-colors">
+                      {{ formatCurrency(getClientLucroRecorrente(client)) }}
+                    </span>
+                  </div>
+                  <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                  <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Impostos</span>
+                    <span class="font-bold text-rose-700 dark:text-rose-400 transition-colors">
+                      {{ formatCurrency(getClientImpostosRecorrentes(client)) }}
                     </span>
                   </div>
                   <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
@@ -2190,6 +2215,16 @@
                 return srvTotal;
               }, 0);
             }, 0);
+          },
+          dashboardLucroRecorrente() {
+            return this.clients.reduce((total, client) => {
+              return total + client.services.reduce((srvTotal, service) => {
+                if (service.type === 'recurring' && service.isActive !== false) {
+                  return srvTotal + this.calculateLucro(service);
+                }
+                return srvTotal;
+              }, 0);
+            }, 0);
           }
         },
         methods: {
@@ -2207,6 +2242,24 @@
             return client.services.reduce((total, service) => {
               if (service.type === 'recurring' && service.isActive !== false) {
                 return total + this.calculateFinalPrice(service);
+              }
+              return total;
+            }, 0);
+          },
+
+          getClientLucroRecorrente(client) {
+            return client.services.reduce((total, service) => {
+              if (service.type === 'recurring' && service.isActive !== false) {
+                return total + this.calculateLucro(service);
+              }
+              return total;
+            }, 0);
+          },
+
+          getClientImpostosRecorrentes(client) {
+            return client.services.reduce((total, service) => {
+              if (service.type === 'recurring' && service.isActive !== false) {
+                return total + this.calculateImpostos(service);
               }
               return total;
             }, 0);
