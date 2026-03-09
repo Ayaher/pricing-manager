@@ -128,9 +128,9 @@
             <ul class="space-y-1">
               <li>
                 <button
-                  @click="switchView('dashboard')"
+                  @click="selectClient(null); switchView('dashboard')"
                   :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 group', 
-                         currentView === 'dashboard' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
+                         currentView === 'dashboard' && !selectedClientId ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
                 >
                   <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                   Dashboard
@@ -254,31 +254,108 @@
           </div>
         </header>
 
-        <!-- Empty State -->
+        <!-- Dashboard / Empty State -->
         <div
           v-if="!selectedClient"
-          class="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-950 dark:to-slate-900"
+          class="flex-1 overflow-y-auto scrollbar-hide p-8 max-w-6xl mx-auto w-full"
         >
-          <div
-            class="w-24 h-24 mb-6 rounded-full bg-slate-200 dark:bg-slate-800/50 border border-slate-400 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-400 shadow-2xl"
-          >
-            <i data-lucide="briefcase" class="w-10 h-10"></i>
+          <div class="mb-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3">Visão Geral</h2>
+            <p class="text-slate-600 dark:text-slate-400 text-lg">Métricas consolidadas de todos os seus clientes e serviços.</p>
           </div>
-          <h3 class="text-xl font-medium text-slate-800 dark:text-slate-300">
-            Nenhum Cliente Selecionado
-          </h3>
-          <p
-            class="text-slate-700 dark:text-slate-400 mt-2 text-center max-w-md"
-          >
-            Selecione um cliente na barra lateral ou crie um novo para gerenciar
-            os preços de seus serviços.
-          </p>
-          <button
-            @click="showNewClientModal = true"
-            class="mt-8 flex items-center gap-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-700 text-slate-900 dark:text-white px-6 py-3 rounded-xl shadow-lg transition-all border border-slate-400 dark:border-slate-700 hover:border-slate-600"
-          >
-            <i data-lucide="plus" class="w-5 h-5"></i> Adicionar Cliente
-          </button>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <!-- Total Clients -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-brand-50 dark:bg-brand-500/10 rounded-xl text-brand-600 dark:text-brand-400 shadow-inner">
+                  <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold">Total de Clientes</h3>
+              </div>
+              <p class="text-4xl font-bold text-slate-900 dark:text-white">{{ dashboardTotalClients }}</p>
+            </div>
+
+            <!-- Total Profit (MRR) -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-blue-50 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400 shadow-inner">
+                  <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold" title="Receita Recorrente">Receita Mensal</h3>
+              </div>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardReceitaRecorrente)">{{ formatCurrency(dashboardReceitaRecorrente) }}</p>
+            </div>
+
+            <!-- A Receber -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400 shadow-inner">
+                  <i data-lucide="wallet" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold">A Receber</h3>
+              </div>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardAReceber)">{{ formatCurrency(dashboardAReceber) }}</p>
+            </div>
+
+            <!-- Total Taxes Recorrentes -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-rose-50 dark:bg-rose-500/10 rounded-xl text-rose-600 dark:text-rose-400 shadow-inner">
+                  <i data-lucide="receipt" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-slate-700 dark:text-slate-300 font-semibold">Impostos Recorrentes</h3>
+              </div>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white truncate" :title="formatCurrency(dashboardImpostosRecorrentes)">{{ formatCurrency(dashboardImpostosRecorrentes) }}</p>
+            </div>
+          </div>
+
+          <!-- Quick breakdown list -->
+          <div v-if="clients.length > 0" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-12">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+              <h3 class="font-semibold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="list" class="w-5 h-5 text-slate-500"></i> Faturamento por Cliente
+              </h3>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              <div v-for="client in clients" :key="client.id" class="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer group" @click="selectClient(client.id)">
+                <div>
+                  <h4 class="font-medium text-slate-900 dark:text-white">{{ client.name }}</h4>
+                  <p class="text-sm text-slate-500 mt-0.5">{{ client.services.length }} serviço(s) faturados</p>
+                </div>
+                <div class="flex items-center gap-6">
+                  <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Mensal</span>
+                    <span class="font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                      {{ formatCurrency(getClientReceitaRecorrente(client)) }}
+                    </span>
+                  </div>
+                  <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                  <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">A Receber</span>
+                    <span class="font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      {{ formatCurrency(getClientAReceber(client)) }}
+                    </span>
+                  </div>
+                  <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all -ml-2"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Empty State fallback when no clients exist -->
+          <div v-if="clients.length === 0" class="flex flex-col items-center justify-center p-12 bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+            <div class="w-20 h-20 mb-6 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 shadow-sm border border-slate-200 dark:border-slate-700">
+              <i data-lucide="briefcase" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-xl font-medium text-slate-800 dark:text-slate-300">Nenhum cliente cadastrado</h3>
+            <p class="text-slate-600 dark:text-slate-400 mt-2 text-center max-w-sm mb-8">
+              Crie seu primeiro cliente para começar a precificar seus serviços e observar suas métricas aqui.
+            </p>
+            <button @click="showNewClientModal = true" class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl shadow-lg shadow-brand-500/20 transition-all focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-900 font-medium text-lg">
+              <i data-lucide="plus" class="w-5 h-5"></i> Cadastrar Cliente
+            </button>
+          </div>
         </div>
 
         <!-- Services List -->
@@ -319,6 +396,13 @@
                         service.type === 'recurring' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20' : 'bg-brand-500/10 text-brand-700 dark:text-brand-400 border border-brand-500/20']"
                     >
                       {{ service.type === 'recurring' ? 'Pagamento recorrente' : 'Pagamento único' }}
+                    </span>
+                    <span
+                      v-if="service.type === 'one-time'"
+                      :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold ml-1', 
+                        service.paid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20']"
+                    >
+                      {{ service.paid ? 'Pago' : 'A Receber' }}
                     </span>
                   </h3>
                 </div>
@@ -1087,6 +1171,36 @@
                   >
                 </div>
               </label>
+
+              <label
+                v-if="newService.type === 'one-time'"
+                class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
+              >
+                <div class="relative flex items-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    v-model="newService.paid"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="w-4 h-4 rounded border border-emerald-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 flex items-center justify-center"
+                  >
+                    <i
+                      data-lucide="check"
+                      class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
+                    ></i>
+                  </div>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-emerald-700 dark:text-emerald-200"
+                    >Serviço já foi pago</span
+                  >
+                  <span
+                    class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
+                    >Serviços pagos não entram no cálculo "A Receber" do Dashboard.</span
+                  >
+                </div>
+              </label>
             </div>
             <div
               class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
@@ -1499,6 +1613,36 @@
                   >
                 </div>
               </label>
+
+              <label
+                v-if="editServiceData.type === 'one-time'"
+                class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
+              >
+                <div class="relative flex items-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    v-model="editServiceData.paid"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="w-4 h-4 rounded border border-emerald-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 flex items-center justify-center"
+                  >
+                    <i
+                      data-lucide="check"
+                      class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
+                    ></i>
+                  </div>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-emerald-700 dark:text-emerald-200"
+                    >Serviço já foi pago</span
+                  >
+                  <span
+                    class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
+                    >Serviços pagos não entram no cálculo "A Receber" do Dashboard.</span
+                  >
+                </div>
+              </label>
             </div>
             <div
               class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
@@ -1892,6 +2036,7 @@
               name: "",
               type: "one-time",
               disableLucroMargin: false,
+              paid: false,
             },
 
             targetServiceIdForNewItem: null,
@@ -1903,7 +2048,7 @@
             editClientData: { id: "", name: "", description: "" },
 
             showEditServiceModal: false,
-            editServiceData: { id: "", name: "", type: "one-time", disableLucroMargin: false, hourlyRate: 0, profitMargin: 0, taxMargin: 0 },
+            editServiceData: { id: "", name: "", type: "one-time", disableLucroMargin: false, hourlyRate: 0, profitMargin: 0, taxMargin: 0, paid: false },
 
             showEditItemModal: false,
             showEditBufferModal: false,
@@ -1943,6 +2088,39 @@
             if (!this.deleteTargetEntity) return false;
             if (this.deleteEntityType === 'item') return true;
             return this.deleteConfirmationInput.trim() === this.deleteTargetEntity.name.trim();
+          },
+          dashboardTotalClients() {
+            return this.clients.length;
+          },
+          dashboardAReceber() {
+            return this.clients.reduce((total, client) => {
+              return total + client.services.reduce((srvTotal, service) => {
+                if (service.type === 'one-time' && !service.paid) {
+                  return srvTotal + this.calculateFinalPrice(service);
+                }
+                return srvTotal;
+              }, 0);
+            }, 0);
+          },
+          dashboardReceitaRecorrente() {
+            return this.clients.reduce((total, client) => {
+              return total + client.services.reduce((srvTotal, service) => {
+                if (service.type === 'recurring') {
+                  return srvTotal + this.calculateFinalPrice(service);
+                }
+                return srvTotal;
+              }, 0);
+            }, 0);
+          },
+          dashboardImpostosRecorrentes() {
+            return this.clients.reduce((total, client) => {
+              return total + client.services.reduce((srvTotal, service) => {
+                if (service.type === 'recurring') {
+                  return srvTotal + this.calculateImpostos(service);
+                }
+                return srvTotal;
+              }, 0);
+            }, 0);
           }
         },
         methods: {
@@ -1954,6 +2132,24 @@
             nextTick(() => {
               this.refreshIcons();
             });
+          },
+
+          getClientReceitaRecorrente(client) {
+            return client.services.reduce((total, service) => {
+              if (service.type === 'recurring') {
+                return total + this.calculateFinalPrice(service);
+              }
+              return total;
+            }, 0);
+          },
+
+          getClientAReceber(client) {
+            return client.services.reduce((total, service) => {
+              if (service.type === 'one-time' && !service.paid) {
+                return total + this.calculateFinalPrice(service);
+              }
+              return total;
+            }, 0);
           },
 
           // -- Core Math --
@@ -2078,6 +2274,7 @@
               name: "",
               type: "one-time",
               disableLucroMargin: false,
+              paid: false,
             };
             this.showNewServiceModal = true;
           },
@@ -2088,6 +2285,7 @@
               name: this.newService.name,
               type: this.newService.type,
               disableLucroMargin: this.newService.disableLucroMargin,
+              paid: this.newService.type === 'one-time' ? this.newService.paid : false,
               profitMargin: this.globalParams.profitMargin,
               taxMargin: this.globalParams.taxMargin,
               hourlyRate: this.globalParams.hourlyRate,
@@ -2264,6 +2462,7 @@
               service.name = this.editServiceData.name;
               service.type = this.editServiceData.type;
               service.disableLucroMargin = this.editServiceData.disableLucroMargin;
+              service.paid = this.editServiceData.type === 'one-time' ? this.editServiceData.paid : false;
               service.hourlyRate = this.editServiceData.hourlyRate;
               service.profitMargin = this.editServiceData.profitMargin;
               service.taxMargin = this.editServiceData.taxMargin;
