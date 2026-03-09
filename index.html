@@ -474,22 +474,18 @@
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 cursor-default opacity-90" title="Considerar horas como lucro">
-                  <div class="relative flex items-center">
-                    <div
-                      class="w-8 h-4 rounded-full transition-colors"
-                      :class="service.disableLucroMargin ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'"
-                    ></div>
-                    <div
-                      class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm"
-                      :class="service.disableLucroMargin ? 'translate-x-4' : ''"
-                    ></div>
+                <div class="flex items-center gap-1.5 cursor-default" title="Considerar horas como lucro (editável no modal de edição)">
+                  <div
+                    class="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors"
+                    :class="service.disableLucroMargin ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-slate-400 dark:border-slate-600'"
+                  >
+                    <i v-if="service.disableLucroMargin" data-lucide="check" class="w-2.5 h-2.5 text-slate-900"></i>
                   </div>
                   <span
-                    class="text-slate-700 dark:text-slate-400 select-none transition-colors text-sm"
-                    :class="service.disableLucroMargin ? 'text-amber-600 dark:text-amber-400/90' : ''"
+                    class="text-sm select-none transition-colors"
+                    :class="service.disableLucroMargin ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-500'"
                   >
-                    Considerar horas como lucro
+                    Horas como lucro
                   </span>
                 </div>
 
