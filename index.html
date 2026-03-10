@@ -90,9 +90,47 @@
   <body
     class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans antialiased h-screen overflow-hidden flex selection:bg-brand-500 selection:text-white"
   >
-    <div id="app" v-cloak class="flex w-full h-full">
-      <!-- Global Settings Sidebar -->
-      <aside
+    <div id="app" v-cloak class="flex w-full h-full relative">
+      <!-- Initializing Screen -->
+      <div v-if="isInitializing" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-[100] flex items-center justify-center">
+        <div class="flex flex-col items-center gap-4">
+          <i data-lucide="loader-2" class="w-10 h-10 text-brand-500 animate-spin"></i>
+          <p class="text-slate-500 dark:text-slate-400 font-medium">Carregando BBEX...</p>
+        </div>
+      </div>
+
+      <!-- Login Screen -->
+      <div v-else-if="!isAuthenticated" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-[60] flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-blue-500 mb-2">BBEX</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Entre para gerenciar seus preços</p>
+          </div>
+          
+          <form @submit.prevent="login" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
+              <input type="email" v-model="loginForm.email" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="seu@email.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label>
+              <input type="password" v-model="loginForm.password" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="••••••••" />
+            </div>
+            
+            <p v-if="loginError" class="text-sm text-red-500 text-center font-medium">{{ loginError }}</p>
+            
+            <button type="submit" :disabled="isLoggingIn" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-4 disabled:opacity-70 disabled:cursor-not-allowed">
+              <span v-show="isLoggingIn" class="flex"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i></span>
+              <span v-show="!isLoggingIn">Entrar</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- App Content -->
+      <template v-else>
+        <!-- Global Settings Sidebar -->
+        <aside
         class="w-72 bg-slate-50 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-800 flex flex-col h-full shrink-0 z-20 shadow-xl relative"
       >
         <div class="p-6 border-b border-slate-300 dark:border-slate-800">
@@ -115,13 +153,27 @@
             >
               <i data-lucide="box" class="w-4 h-4"></i> Meu Espaço
             </h2>
-            <button
-              @click="isDark = !isDark"
-              class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
-            >
-              <span v-show="!isDark" class="flex"><i data-lucide="moon" class="w-4 h-4"></i></span>
-              <span v-show="isDark" class="flex"><i data-lucide="sun" class="w-4 h-4"></i></span>
-            </button>
+            <div class="flex items-center gap-2">
+              <div class="group relative flex items-center justify-center">
+                <span v-show="syncStatus === 'synced'" class="flex"><i data-lucide="check-circle-2" class="w-4.5 h-4.5 text-emerald-500"></i></span>
+                <span v-show="syncStatus === 'syncing'" class="flex"><i data-lucide="loader-2" class="w-4.5 h-4.5 text-amber-500 animate-spin"></i></span>
+                <span v-show="syncStatus === 'error'" class="flex"><i data-lucide="alert-circle" class="w-4.5 h-4.5 text-red-500"></i></span>
+                
+                <div class="absolute right-0 top-full mt-2 w-max px-2 py-1 bg-slate-800 text-xs text-slate-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  <span v-if="syncStatus === 'synced'">Sincronizado na Nuvem</span>
+                  <span v-else-if="syncStatus === 'syncing'">Sincronizando...</span>
+                  <span v-else-if="syncStatus === 'error'">Erro de Sincronização</span>
+                </div>
+              </div>
+
+              <button
+                @click="isDark = !isDark"
+                class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
+              >
+                <span v-show="!isDark" class="flex"><i data-lucide="moon" class="w-4 h-4"></i></span>
+                <span v-show="isDark" class="flex"><i data-lucide="sun" class="w-4 h-4"></i></span>
+              </button>
+            </div>
           </div>
 
           <div class="px-2 pt-2 pb-4">
@@ -201,9 +253,14 @@
         </div>
 
         <div
-          class="p-4 border-t border-slate-300 dark:border-slate-800 text-xs text-slate-600 text-center"
+          class="p-4 border-t border-slate-300 dark:border-slate-800 flex flex-col gap-2 relative z-50 text-xs text-slate-600"
         >
-          Dados salvos localmente no navegador
+          <div class="flex items-center justify-between w-full">
+            <span class="truncate pr-2 text-slate-600 dark:text-slate-400 font-medium" :title="userEmail">{{ userEmail }}</span>
+            <button @click="logout" class="text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors p-1" title="Sair">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -479,7 +536,7 @@
                     class="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors"
                     :class="service.disableLucroMargin ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-slate-400 dark:border-slate-600'"
                   >
-                    <i v-if="service.disableLucroMargin" data-lucide="check" class="w-2.5 h-2.5 text-slate-900"></i>
+                    <span v-show="service.disableLucroMargin" class="flex"><i data-lucide="check" class="w-2.5 h-2.5 text-slate-900"></i></span>
                   </div>
                   <span
                     class="text-sm select-none transition-colors"
@@ -2102,14 +2159,44 @@
           </div>
         </div>
       </transition>
+      
+      </template>
     </div>
 
-    <script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCXG1lmJacdOFfr4zZTkz5lHaA9oGk6NJo",
+        authDomain: "bbex-management.firebaseapp.com",
+        projectId: "bbex-management",
+        storageBucket: "bbex-management.firebasestorage.app",
+        messagingSenderId: "678795799098",
+        appId: "1:678795799098:web:ae0819bc0f0c62239ae303"
+      };
+
+      const firebaseApp = initializeApp(firebaseConfig);
+      const auth = getAuth(firebaseApp);
+      const db = getFirestore(firebaseApp);
+
       const { createApp, nextTick } = Vue;
 
       const app = createApp({
         data() {
           return {
+            isInitializing: true,
+            isAuthenticated: false,
+            userEmail: "",
+            userUid: null,
+            loginForm: { email: "", password: "" },
+            loginError: "",
+            isLoggingIn: false,
+            
+            syncStatus: 'synced',
+            syncTimeout: null,
+
             isDark: true,
             globalParams: {
               hourlyRate: 60,
@@ -2429,7 +2516,7 @@
               type: this.newService.type,
               disableLucroMargin: this.newService.disableLucroMargin,
               paid: this.newService.type === 'one-time' ? this.newService.paid : false,
-              isActive: this.newService.type === 'recurring' ? this.newService.isActive : undefined,
+              isActive: this.newService.type === 'recurring' ? this.newService.isActive : null,
               profitMargin: this.globalParams.profitMargin,
               taxMargin: this.globalParams.taxMargin,
               hourlyRate: this.globalParams.hourlyRate,
@@ -2607,7 +2694,7 @@
               service.type = this.editServiceData.type;
               service.disableLucroMargin = this.editServiceData.disableLucroMargin;
               service.paid = this.editServiceData.type === 'one-time' ? this.editServiceData.paid : false;
-              service.isActive = this.editServiceData.type === 'recurring' ? this.editServiceData.isActive : undefined;
+              service.isActive = this.editServiceData.type === 'recurring' ? this.editServiceData.isActive : null;
               service.hourlyRate = this.editServiceData.hourlyRate;
               service.profitMargin = this.editServiceData.profitMargin;
               service.taxMargin = this.editServiceData.taxMargin;
@@ -2654,20 +2741,55 @@
             this.refreshIcons();
           },
 
+          // -- Auth --
+          async login() {
+            this.loginError = "";
+            this.isLoggingIn = true;
+            try {
+              await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
+            } catch (err) {
+              console.error("Login failed:", err);
+              this.loginError = "Email ou senha incorretos.";
+            } finally {
+              this.isLoggingIn = false;
+            }
+          },
+          async logout() {
+            await signOut(auth);
+          },
+
           // -- Persistence --
           saveData() {
-            const data = {
-              globalParams: this.globalParams,
-              clients: this.clients,
-              isDark: this.isDark,
-            };
-            localStorage.setItem("bbexPricingManager", JSON.stringify(data));
-          },
-          loadData() {
-            const raw = localStorage.getItem("bbexPricingManager");
-            if (raw) {
+            if (!this.isAuthenticated || !this.userUid) return;
+            
+            this.syncStatus = 'syncing';
+            
+            if (this.syncTimeout) {
+              clearTimeout(this.syncTimeout);
+            }
+            
+            this.syncTimeout = setTimeout(async () => {
+              const data = {
+                globalParams: this.globalParams,
+                clients: this.clients,
+                isDark: this.isDark,
+              };
               try {
-                const parsed = JSON.parse(raw);
+                await setDoc(doc(db, "users", this.userUid), data);
+                this.syncStatus = 'synced';
+              } catch (error) {
+                console.error("Failed to save to Firestore:", error);
+                this.syncStatus = 'error';
+              }
+            }, 1000);
+          },
+          async loadData() {
+            if (!this.userUid) return;
+            
+            try {
+              const docSnap = await getDoc(doc(db, "users", this.userUid));
+              if (docSnap.exists()) {
+                const parsed = docSnap.data();
                 if (parsed.isDark !== undefined) this.isDark = parsed.isDark;
                 if (parsed.globalParams)
                   this.globalParams = {
@@ -2689,9 +2811,9 @@
                   });
                   this.clients = parsed.clients;
                 }
-              } catch (e) {
-                console.error("Failed to parse local storage", e);
               }
+            } catch (e) {
+              console.error("Failed to read from Firestore", e);
             }
           },
           refreshIcons() {
@@ -2703,9 +2825,22 @@
           },
         },
         mounted() {
-          this.loadData();
-          document.documentElement.className = this.isDark ? "dark" : "";
-          this.refreshIcons();
+          onAuthStateChanged(auth, async (user) => {
+            if (user) {
+              this.userUid = user.uid;
+              this.userEmail = user.email;
+              this.isAuthenticated = true;
+              await this.loadData();
+              document.documentElement.className = this.isDark ? "dark" : "";
+            } else {
+              this.isAuthenticated = false;
+              this.userUid = null;
+              this.userEmail = "";
+              this.clients = [];
+            }
+            this.isInitializing = false;
+            this.refreshIcons();
+          });
         },
         watch: {
           isDark(val) {
