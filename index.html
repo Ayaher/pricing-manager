@@ -1643,7 +1643,7 @@
               </button>
             </header>
 
-            <div class="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 w-full">
               <div
                 v-if="expensesHistory.length === 0"
                 class="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700"
@@ -1677,21 +1677,21 @@
                     <tr>
                       <th class="px-6 py-4">Mês/Ano</th>
                       <th class="px-6 py-4 text-right">Faturamento</th>
-                      <th class="px-6 py-4 text-right">Impostos (DAS+DARF)</th>
-                      <th class="px-6 py-4 text-right">Alíquota</th>
-                      <th class="px-6 py-4 text-right">Custos</th>
+                      <th class="px-3 py-4 text-right">Impostos (DAS+DARF)</th>
+                      <th class="px-3 py-4 text-right">Alíquota</th>
+                      <th class="px-3 py-4 text-right">Custos</th>
                       <th
-                        class="px-6 py-4 text-right text-brand-600 dark:text-brand-400"
+                        class="px-4 py-4 text-right text-brand-600 dark:text-brand-400 text-sm bg-brand-50/50 dark:bg-brand-900/10 rounded-tl-lg"
                       >
                         Pró-Labore Líq.
                       </th>
                       <th
-                        class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400"
+                        class="px-4 py-4 text-right text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50/50 dark:bg-emerald-900/10"
                       >
                         Antecipação de Lucros
                       </th>
                       <th
-                        class="px-6 py-4 text-right text-indigo-600 dark:text-indigo-400"
+                        class="px-4 py-4 text-right text-indigo-600 dark:text-indigo-400 text-sm font-bold"
                       >
                         Lucro líquido
                       </th>
@@ -1711,34 +1711,41 @@
                         {{ formatCurrency(expense.faturamento) }}
                       </td>
                       <td
-                        class="px-6 py-4 text-right text-rose-600 dark:text-rose-400"
+                        class="px-3 py-4 text-right text-rose-600 dark:text-rose-400"
                       >
                         {{ formatCurrency(expense.das + expense.darf) }}
                       </td>
-                      <td class="px-6 py-4 text-right font-medium">
+                      <td class="px-3 py-4 text-right font-medium">
                         {{ expense.aliquotaEfetiva.toFixed(2) }}%
                       </td>
                       <td
-                        class="px-6 py-4 text-right text-rose-600 dark:text-rose-400"
+                        class="px-3 py-4 text-right text-rose-600 dark:text-rose-400"
                       >
                         {{ formatCurrency(expense.custos) }}
                       </td>
                       <td
-                        class="px-6 py-4 text-right font-bold text-brand-700 dark:text-brand-300"
+                        class="px-4 py-4 text-right font-bold text-brand-700 dark:text-brand-300 text-base bg-brand-50/50 dark:bg-brand-900/10"
                       >
                         {{ formatCurrency(expense.proLaboreLiquido) }}
                       </td>
                       <td
-                        class="px-6 py-4 text-right font-bold text-emerald-700 dark:text-emerald-400"
+                        class="px-4 py-4 text-right font-bold text-emerald-700 dark:text-emerald-400 text-base bg-emerald-50/50 dark:bg-emerald-900/10"
                       >
                         {{ formatCurrency(expense.lucro) }}
                       </td>
                       <td
-                        class="px-6 py-4 text-right font-bold text-indigo-700 dark:text-indigo-400"
+                        class="px-4 py-4 text-right font-black text-indigo-700 dark:text-indigo-400 text-lg tracking-tight bg-indigo-50/50 dark:bg-indigo-900/10"
                       >
                         {{ formatCurrency(expense.proLaboreLiquido + expense.lucro) }}
                       </td>
-                      <td class="px-4 py-4">
+                      <td class="px-4 py-4 flex gap-2 justify-end">
+                        <button
+                          @click="openEditExpenseModal(expense)"
+                          class="text-slate-400 hover:text-brand-500 transition-colors p-1"
+                          title="Editar"
+                        >
+                          <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
                         <button
                           @click="confirmDeleteExpense(expense)"
                           class="text-slate-400 hover:text-red-500 transition-colors p-1"
@@ -2916,7 +2923,7 @@
                   class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2"
                 >
                   <i data-lucide="receipt" class="w-5 h-5 text-brand-500"></i>
-                  Novo Fechamento Mensal
+                  {{ editingExpenseId ? 'Editar Fechamento' : 'Novo Fechamento Mensal' }}
                 </h3>
                 <button
                   @click="showNewExpenseModal = false"
@@ -3040,18 +3047,26 @@
               <div
                 class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
               >
-                <button
-                  @click="showNewExpenseModal = false"
-                  class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+                <p
+                  v-if="monthAlreadyExistsError"
+                  class="text-xs text-red-500 font-medium whitespace-nowrap"
                 >
-                  Cancelar
-                </button>
-                <button
-                  @click="saveNewExpense"
-                  class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
-                >
-                  Salvar Fechamento
-                </button>
+                  Mês/Ano já cadastrado.
+                </p>
+                <div class="flex gap-3">
+                  <button
+                    @click="showNewExpenseModal = false"
+                    class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    @click="saveNewExpense"
+                    class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+                  >
+                    Salvar Fechamento
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -3165,6 +3180,8 @@
             // Expenses Modal
             showNewExpenseModal: false,
             showMonthPicker: false,
+            monthAlreadyExistsError: false,
+            editingExpenseId: null,
             pickerYear: new Date().getFullYear(),
             newExpense: {
               month: "",
@@ -3286,9 +3303,20 @@
             }, 0);
           },
           sortedExpensesHistory() {
-            // Usually, these could be sorted by an explicit timestamp, but for simplicity we rely on array order
-            // inserted manually (or we could parse the `month` text). Here we just return the reversed list to show newest first.
-            return [...this.expensesHistory].reverse();
+            // Sort by year and month descending
+            const monthsOrder = {
+              'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4,
+              'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8,
+              'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12
+            };
+            return [...this.expensesHistory].sort((a, b) => {
+              const [monthA, yearA] = a.month.split(' ');
+              const [monthB, yearB] = b.month.split(' ');
+              if (yearA !== yearB) {
+                return parseInt(yearB) - parseInt(yearA);
+              }
+              return monthsOrder[monthB] - monthsOrder[monthA];
+            });
           },
         },
         methods: {
@@ -3750,6 +3778,8 @@
           // -- Expense Actions --
           openNewExpenseModal() {
             this.showMonthPicker = false;
+            this.monthAlreadyExistsError = false;
+            this.editingExpenseId = null;
             this.newExpense = {
               month: "",
               rawMonth: "",
@@ -3761,12 +3791,42 @@
             };
             this.showNewExpenseModal = true;
           },
+          openEditExpenseModal(expense) {
+            this.showMonthPicker = false;
+            this.monthAlreadyExistsError = false;
+            this.editingExpenseId = expense.id;
+            
+            const [monthStr, year] = expense.month.split(' ');
+            const monthsObj = {'Janeiro': '01', 'Fevereiro': '02', 'Março': '03', 'Abril': '04', 'Maio': '05', 'Junho': '06', 'Julho': '07', 'Agosto': '08', 'Setembro': '09', 'Outubro': '10', 'Novembro': '11', 'Dezembro': '12'};
+            const rawMonthStr = `${year}-${monthsObj[monthStr]}`;
+
+            this.newExpense = {
+              month: expense.month,
+              rawMonth: rawMonthStr,
+              faturamento: expense.faturamento ? expense.faturamento.toFixed(2).replace('.', ',') : null,
+              das: expense.das ? expense.das.toFixed(2).replace('.', ',') : null,
+              darf: expense.darf ? expense.darf.toFixed(2).replace('.', ',') : null,
+              proLaboreBruto: expense.proLaboreBruto ? expense.proLaboreBruto.toFixed(2).replace('.', ',') : null,
+              custos: expense.custos ? expense.custos.toFixed(2).replace('.', ',') : null,
+            };
+            this.showNewExpenseModal = true;
+          },
           saveNewExpense() {
+            this.monthAlreadyExistsError = false;
             if (!this.newExpense.rawMonth) return;
 
             const [year, monthStr] = this.newExpense.rawMonth.split('-');
             const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            this.newExpense.month = `${months[parseInt(monthStr, 10) - 1]} ${year}`;
+            const formattedMonth = `${months[parseInt(monthStr, 10) - 1]} ${year}`;
+            
+            // Check for duplicates
+            const isDuplicate = this.expensesHistory.some(e => e.month === formattedMonth && e.id !== this.editingExpenseId);
+            if (isDuplicate) {
+              this.monthAlreadyExistsError = true;
+              return;
+            }
+            
+            this.newExpense.month = formattedMonth;
 
             const faturamento = this.parseBrCurrency(this.newExpense.faturamento);
             const das = this.parseBrCurrency(this.newExpense.das);
@@ -3779,19 +3839,37 @@
             const aliquotaEfetiva =
               faturamento > 0 ? ((das + darf) / faturamento) * 100 : 0;
 
-            this.expensesHistory.push({
-              id: this.generateId(),
-              month: this.newExpense.month,
-              faturamento,
-              das,
-              darf,
-              proLaboreBruto,
-              custos,
-              proLaboreLiquido,
-              lucro,
-              aliquotaEfetiva,
-              timestamp: Date.now(),
-            });
+            if (this.editingExpenseId) {
+              const expenseIndex = this.expensesHistory.findIndex(e => e.id === this.editingExpenseId);
+              if (expenseIndex !== -1) {
+                this.expensesHistory[expenseIndex] = {
+                  ...this.expensesHistory[expenseIndex],
+                  month: this.newExpense.month,
+                  faturamento,
+                  das,
+                  darf,
+                  proLaboreBruto,
+                  custos,
+                  proLaboreLiquido,
+                  lucro,
+                  aliquotaEfetiva
+                };
+              }
+            } else {
+              this.expensesHistory.push({
+                id: this.generateId(),
+                month: this.newExpense.month,
+                faturamento,
+                das,
+                darf,
+                proLaboreBruto,
+                custos,
+                proLaboreLiquido,
+                lucro,
+                aliquotaEfetiva,
+                timestamp: Date.now(),
+              });
+            }
 
             this.showNewExpenseModal = false;
             this.refreshIcons();
