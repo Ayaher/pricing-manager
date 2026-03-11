@@ -44,6 +44,9 @@
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <!-- Lucide Icons (Browser Script) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -1681,12 +1684,12 @@
                       <th class="px-3 py-4 text-right">Alíquota</th>
                       <th class="px-3 py-4 text-right">Custos</th>
                       <th
-                        class="px-4 py-4 text-right text-brand-600 dark:text-brand-400 text-sm bg-brand-50/50 dark:bg-brand-900/10 rounded-tl-lg"
+                        class="px-4 py-4 text-right text-brand-600 dark:text-brand-400 text-sm"
                       >
                         Pró-Labore Líq.
                       </th>
                       <th
-                        class="px-4 py-4 text-right text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50/50 dark:bg-emerald-900/10"
+                        class="px-4 py-4 text-right text-emerald-600 dark:text-emerald-400 text-sm"
                       >
                         Antecipação de Lucros
                       </th>
@@ -1724,12 +1727,12 @@
                         {{ formatCurrency(expense.custos) }}
                       </td>
                       <td
-                        class="px-4 py-4 text-right font-bold text-brand-700 dark:text-brand-300 text-base bg-brand-50/50 dark:bg-brand-900/10"
+                        class="px-4 py-4 text-right font-bold text-brand-700 dark:text-brand-300 text-base bg-emerald-50 dark:bg-emerald-900/20"
                       >
                         {{ formatCurrency(expense.proLaboreLiquido) }}
                       </td>
                       <td
-                        class="px-4 py-4 text-right font-bold text-emerald-700 dark:text-emerald-400 text-base bg-emerald-50/50 dark:bg-emerald-900/10"
+                        class="px-4 py-4 text-right font-bold text-emerald-700 dark:text-emerald-400 text-base bg-emerald-50 dark:bg-emerald-900/20"
                       >
                         {{ formatCurrency(expense.lucro) }}
                       </td>
