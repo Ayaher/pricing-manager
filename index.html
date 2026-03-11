@@ -677,6 +677,43 @@
                 </div>
               </div>
 
+              <!-- Expenses Evolution Chart Widget -->
+              <div
+                v-if="expensesHistory.length > 0"
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-12"
+              >
+                <div
+                  class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <h3
+                    class="font-semibold text-lg text-slate-900 dark:text-white flex items-center gap-2"
+                  >
+                    <i data-lucide="trending-up" class="w-5 h-5 text-brand-500"></i>
+                    Evolução das Despesas CNPJ
+                  </h3>
+                  <div class="flex items-center gap-2">
+                    <label for="chartPeriod" class="text-sm text-slate-500 font-medium">Período:</label>
+                    <div class="relative">
+                      <select
+                        id="chartPeriod"
+                        v-model="expenseChartPeriod"
+                        @change="renderExpenseChart"
+                        class="appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium cursor-pointer shadow-sm"
+                      >
+                        <option :value="3">3 Meses</option>
+                        <option :value="6">6 Meses</option>
+                        <option :value="9">9 Meses</option>
+                        <option :value="12">1 Ano</option>
+                      </select>
+                      <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-6 relative w-full" style="height: 350px;">
+                  <canvas id="expenseEvolutionChart"></canvas>
+                </div>
+              </div>
+
               <!-- Empty State fallback when no clients exist -->
               <div
                 v-if="clients.length === 0"
@@ -3186,6 +3223,8 @@
             monthAlreadyExistsError: false,
             editingExpenseId: null,
             pickerYear: new Date().getFullYear(),
+            expenseChartPeriod: 6,
+            expenseChartInstance: null,
             newExpense: {
               month: "",
               rawMonth: "",
@@ -3321,6 +3360,25 @@
               return monthsOrder[monthB] - monthsOrder[monthA];
             });
           },
+        },
+        watch: {
+          currentView(newVal) {
+            if (newVal === "dashboard") {
+              this.$nextTick(() => {
+                this.renderExpenseChart();
+              });
+            }
+          },
+          expensesHistory: {
+            deep: true,
+            handler() {
+              if (this.currentView === "dashboard") {
+                this.$nextTick(() => {
+                  this.renderExpenseChart();
+                });
+              }
+            }
+          }
         },
         methods: {
           switchView(view) {
@@ -4096,6 +4154,122 @@
               console.error("Failed to read from Firestore", e);
             }
           },
+          renderExpenseChart() {
+            if (!document.getElementById("expenseEvolutionChart")) return;
+            
+            const ctx = document.getElementById("expenseEvolutionChart").getContext("2d");
+            
+            // Slice the sorted data based on period (newest to oldest), then reverse to show oldest to newest on the plot
+            const dataSlice = this.sortedExpensesHistory.slice(0, this.expenseChartPeriod).reverse();
+            
+            const labels = dataSlice.map(e => e.month.substring(0, 3) + e.month.substring(e.month.indexOf(' ')));
+            const faturamentoData = dataSlice.map(e => e.faturamento);
+            const impostosData = dataSlice.map(e => e.das + e.darf);
+            const custosData = dataSlice.map(e => e.custos);
+            const lucroData = dataSlice.map(e => e.proLaboreLiquido + e.lucro);
+
+            if (this.expenseChartInstance) {
+              this.expenseChartInstance.destroy();
+            }
+
+            Chart.defaults.color = this.isDark ? '#94a3b8' : '#64748b';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            this.expenseChartInstance = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [
+                  {
+                    label: 'Faturamento',
+                    data: faturamentoData,
+                    borderColor: '#0f172a', // slate-900
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.4
+                  },
+                  {
+                    label: 'Impostos',
+                    data: impostosData,
+                    borderColor: '#e11d48', // rose-600
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.4
+                  },
+                  {
+                    label: 'Custos',
+                    data: custosData,
+                    borderColor: '#f59e0b', // amber-500
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.4
+                  },
+                  {
+                    label: 'Lucro Líquido',
+                    data: lucroData,
+                    borderColor: '#4f46e5', // indigo-600
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    tension: 0.4
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index',
+                  intersect: false,
+                },
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => {
+                        let label = context.dataset.label || '';
+                        if (label) label += ': ';
+                        if (context.parsed.y !== null) {
+                          label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                        }
+                        return label;
+                      }
+                    }
+                  },
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      usePointStyle: true,
+                      padding: 20
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => {
+                        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
+                      }
+                    },
+                    grid: {
+                      color: this.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+                    }
+                  },
+                  x: {
+                    grid: {
+                      display: false
+                    }
+                  }
+                }
+              }
+            });
+            
+            // Adjust dark mode slate color override for faturamento correctly
+            if(this.isDark) {
+               this.expenseChartInstance.data.datasets[0].borderColor = '#f8fafc'; // slate-50
+               this.expenseChartInstance.update();
+            }
+          },
           refreshIcons() {
             nextTick(() => {
               if (window.lucide) {
@@ -4119,6 +4293,11 @@
               this.clients = [];
             }
             this.isInitializing = false;
+            this.$nextTick(() => {
+              if (this.currentView === "dashboard") {
+                this.renderExpenseChart();
+              }
+            });
             this.refreshIcons();
           });
         },
