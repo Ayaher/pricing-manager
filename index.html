@@ -2918,17 +2918,51 @@
               <div
                 class="p-6 space-y-4 max-h-[60vh] overflow-y-auto scrollbar-hide"
               >
-                <div>
+                <div class="relative">
                   <label
                     class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1"
                     >Mês/Ano</label
                   >
-                  <input
-                    type="text"
-                    v-model="newExpense.month"
-                    placeholder="ex. Janeiro 2026"
-                    class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
+                  <!-- Overlay -->
+                  <div v-show="showMonthPicker" @click="showMonthPicker = false" class="fixed inset-0 z-40"></div>
+                  
+                  <!-- Trigger -->
+                  <div
+                    @click="openMonthPicker"
+                    class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white cursor-pointer flex justify-between items-center relative z-50 transition-shadow"
+                    :class="{'ring-2 ring-brand-500': showMonthPicker}"
+                  >
+                    <span v-if="newExpense.rawMonth">{{ getFormattedDisplayMonth() }}</span>
+                    <span v-else class="text-slate-500">Selecione o mês...</span>
+                    <div><i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i></div>
+                  </div>
+                  
+                  <!-- Picker -->
+                  <div
+                    v-show="showMonthPicker"
+                    class="absolute z-50 left-0 right-0 mt-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl p-3"
+                  >
+                    <div class="flex justify-between items-center mb-3">
+                      <button @click.prevent.stop="prevPickerYear" class="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors text-slate-700 dark:text-slate-300">
+                        <div><i data-lucide="chevron-left" class="w-5 h-5"></i></div>
+                      </button>
+                      <span class="font-semibold text-slate-900 dark:text-white">{{ pickerYear }}</span>
+                      <button @click.prevent.stop="nextPickerYear" class="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors text-slate-700 dark:text-slate-300">
+                        <div><i data-lucide="chevron-right" class="w-5 h-5"></i></div>
+                      </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button
+                        v-for="(m, index) in ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']"
+                        :key="m"
+                        @click.prevent.stop="selectMonth(index)"
+                        class="py-2 text-sm rounded-md transition-colors font-medium border border-transparent shadow-sm"
+                        :class="newExpense.rawMonth === `${pickerYear}-${(index + 1).toString().padStart(2, '0')}` ? 'bg-brand-500 text-white !shadow-md border-brand-500' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/50'"
+                      >
+                        {{ m }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label
@@ -3120,8 +3154,11 @@
 
             // Expenses Modal
             showNewExpenseModal: false,
+            showMonthPicker: false,
+            pickerYear: new Date().getFullYear(),
             newExpense: {
               month: "",
+              rawMonth: "",
               faturamento: null,
               das: null,
               darf: null,
@@ -3676,8 +3713,10 @@
 
           // -- Expense Actions --
           openNewExpenseModal() {
+            this.showMonthPicker = false;
             this.newExpense = {
               month: "",
+              rawMonth: "",
               faturamento: null,
               das: null,
               darf: null,
@@ -3687,7 +3726,11 @@
             this.showNewExpenseModal = true;
           },
           saveNewExpense() {
-            if (!this.newExpense.month) return;
+            if (!this.newExpense.rawMonth) return;
+
+            const [year, monthStr] = this.newExpense.rawMonth.split('-');
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            this.newExpense.month = `${months[parseInt(monthStr, 10) - 1]} ${year}`;
 
             const faturamento = Number(this.newExpense.faturamento) || 0;
             const das = Number(this.newExpense.das) || 0;
@@ -3716,6 +3759,35 @@
 
             this.showNewExpenseModal = false;
             this.refreshIcons();
+          },
+
+          // -- Month Picker Actions --
+          openMonthPicker() {
+            if (this.newExpense.rawMonth) {
+              const [y] = this.newExpense.rawMonth.split('-');
+              this.pickerYear = parseInt(y, 10);
+            } else {
+              this.pickerYear = new Date().getFullYear();
+            }
+            this.showMonthPicker = true;
+            this.refreshIcons(); // to render chevron icons in dropdown
+          },
+          selectMonth(monthIndex) {
+            const m = (monthIndex + 1).toString().padStart(2, '0');
+            this.newExpense.rawMonth = `${this.pickerYear}-${m}`;
+            this.showMonthPicker = false;
+          },
+          prevPickerYear() {
+            this.pickerYear--;
+          },
+          nextPickerYear() {
+            this.pickerYear++;
+          },
+          getFormattedDisplayMonth() {
+            if (!this.newExpense.rawMonth) return '';
+            const [y, m] = this.newExpense.rawMonth.split('-');
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            return `${months[parseInt(m, 10) - 1]} ${y}`;
           },
 
           // -- Edit Actions --
@@ -3966,6 +4038,9 @@
             if (val) this.refreshIcons();
           },
           showNewExpenseModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showMonthPicker(val) {
             if (val) this.refreshIcons();
           },
           showEditClientModal(val) {
