@@ -1688,7 +1688,12 @@
                       <th
                         class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400"
                       >
-                        Antecipação (Lucro)
+                        Antecipação de Lucros
+                      </th>
+                      <th
+                        class="px-6 py-4 text-right text-indigo-600 dark:text-indigo-400"
+                      >
+                        Lucro líquido
                       </th>
                       <th class="px-4 py-4 w-16"></th>
                     </tr>
@@ -1727,6 +1732,11 @@
                         class="px-6 py-4 text-right font-bold text-emerald-700 dark:text-emerald-400"
                       >
                         {{ formatCurrency(expense.lucro) }}
+                      </td>
+                      <td
+                        class="px-6 py-4 text-right font-bold text-indigo-700 dark:text-indigo-400"
+                      >
+                        {{ formatCurrency(expense.proLaboreLiquido + expense.lucro) }}
                       </td>
                       <td class="px-4 py-4">
                         <button
