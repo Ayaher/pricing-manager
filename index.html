@@ -3224,7 +3224,6 @@
             editingExpenseId: null,
             pickerYear: new Date().getFullYear(),
             expenseChartPeriod: 6,
-            expenseChartInstance: null,
             newExpense: {
               month: "",
               rawMonth: "",
@@ -4155,24 +4154,27 @@
             }
           },
           renderExpenseChart() {
-            if (!document.getElementById("expenseEvolutionChart")) return;
-            
-            const ctx = document.getElementById("expenseEvolutionChart").getContext("2d");
-            
-            // Slice the sorted data based on period (newest to oldest), then reverse to show oldest to newest on the plot
-            const dataSlice = this.sortedExpensesHistory.slice(0, this.expenseChartPeriod).reverse();
-            
-            const labels = dataSlice.map(e => e.month.substring(0, 3) + e.month.substring(e.month.indexOf(' ')));
-            const faturamentoData = dataSlice.map(e => e.faturamento);
-            const impostosData = dataSlice.map(e => e.das + e.darf);
-            const custosData = dataSlice.map(e => e.custos);
-            const lucroData = dataSlice.map(e => e.proLaboreLiquido + e.lucro);
+            this.$nextTick(() => {
+              const canvas = document.getElementById("expenseEvolutionChart");
+              if (!canvas) return;
+              
+              const ctx = canvas.getContext("2d");
 
-            if (this.expenseChartInstance) {
-              this.expenseChartInstance.destroy();
-            }
+              if (this.expenseChartInstance) {
+                this.expenseChartInstance.destroy();
+                this.expenseChartInstance = null;
+              }
+              
+              // Slice the sorted data based on period (newest to oldest), then reverse to show oldest to newest on the plot
+              const dataSlice = this.sortedExpensesHistory.slice(0, this.expenseChartPeriod).reverse();
+              
+              const labels = dataSlice.map(e => e.month.substring(0, 3) + e.month.substring(e.month.indexOf(' ')));
+              const faturamentoData = dataSlice.map(e => e.faturamento);
+              const impostosData = dataSlice.map(e => e.das + e.darf);
+              const custosData = dataSlice.map(e => e.custos);
+              const lucroData = dataSlice.map(e => e.proLaboreLiquido + e.lucro);
 
-            Chart.defaults.color = this.isDark ? '#94a3b8' : '#64748b';
+              Chart.defaults.color = this.isDark ? '#94a3b8' : '#64748b';
             Chart.defaults.font.family = "'Inter', sans-serif";
 
             this.expenseChartInstance = new Chart(ctx, {
@@ -4264,11 +4266,12 @@
               }
             });
             
-            // Adjust dark mode slate color override for faturamento correctly
-            if(this.isDark) {
-               this.expenseChartInstance.data.datasets[0].borderColor = '#f8fafc'; // slate-50
-               this.expenseChartInstance.update();
-            }
+              // Adjust dark mode slate color override for faturamento correctly
+              if(this.isDark) {
+                 this.expenseChartInstance.data.datasets[0].borderColor = '#f8fafc'; // slate-50
+                 this.expenseChartInstance.update();
+              }
+            });
           },
           refreshIcons() {
             nextTick(() => {
