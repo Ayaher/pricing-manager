@@ -2970,9 +2970,9 @@
                     >Faturamento Bruto Contabilizei (R$)</label
                   >
                   <input
-                    type="number"
-                    step="0.01"
-                    v-model.number="newExpense.faturamento"
+                    type="text" inputmode="decimal"
+                    v-model="newExpense.faturamento"
+                    @blur="formatInputCurrency('newExpense.faturamento')"
                     class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
@@ -2983,9 +2983,9 @@
                       >DAS (R$)</label
                     >
                     <input
-                      type="number"
-                      step="0.01"
-                      v-model.number="newExpense.das"
+                      type="text" inputmode="decimal"
+                      v-model="newExpense.das"
+                      @blur="formatInputCurrency('newExpense.das')"
                       class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   </div>
@@ -2995,9 +2995,9 @@
                       >DARF (R$)</label
                     >
                     <input
-                      type="number"
-                      step="0.01"
-                      v-model.number="newExpense.darf"
+                      type="text" inputmode="decimal"
+                      v-model="newExpense.darf"
+                      @blur="formatInputCurrency('newExpense.darf')"
                       class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   </div>
@@ -3008,9 +3008,9 @@
                     >Pró-Labore Bruto (R$)</label
                   >
                   <input
-                    type="number"
-                    step="0.01"
-                    v-model.number="newExpense.proLaboreBruto"
+                    type="text" inputmode="decimal"
+                    v-model="newExpense.proLaboreBruto"
+                    @blur="formatInputCurrency('newExpense.proLaboreBruto')"
                     class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
@@ -3020,9 +3020,9 @@
                     >Custos Cartão da Empresa (R$)</label
                   >
                   <input
-                    type="number"
-                    step="0.01"
-                    v-model.number="newExpense.custos"
+                    type="text" inputmode="decimal"
+                    v-model="newExpense.custos"
+                    @blur="formatInputCurrency('newExpense.custos')"
                     class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
@@ -3483,6 +3483,32 @@
               currency: "BRL",
             }).format(value || 0);
           },
+          parseBrCurrency(val) {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            let str = String(val).trim();
+            if (str.includes('.') && str.includes(',')) {
+               str = str.replace(/\./g, '').replace(',', '.');
+            } else if (str.includes(',')) {
+               str = str.replace(',', '.');
+            }
+            const num = Number(str);
+            return isNaN(num) ? 0 : num;
+          },
+          formatInputCurrency(statePath) {
+            const keys = statePath.split(".");
+            let obj = this;
+            for (let i = 0; i < keys.length - 1; i++) {
+              obj = obj[keys[i]];
+            }
+            const finalKey = keys[keys.length - 1];
+            if (obj[finalKey] !== null && obj[finalKey] !== "") {
+              const num = this.parseBrCurrency(obj[finalKey]);
+              if (!isNaN(num)) {
+                obj[finalKey] = num.toFixed(2).replace('.', ',');
+              }
+            }
+          },
           generateId() {
             return Math.random().toString(36).substring(2, 9);
           },
@@ -3732,11 +3758,11 @@
             const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             this.newExpense.month = `${months[parseInt(monthStr, 10) - 1]} ${year}`;
 
-            const faturamento = Number(this.newExpense.faturamento) || 0;
-            const das = Number(this.newExpense.das) || 0;
-            const darf = Number(this.newExpense.darf) || 0;
-            const proLaboreBruto = Number(this.newExpense.proLaboreBruto) || 0;
-            const custos = Number(this.newExpense.custos) || 0;
+            const faturamento = this.parseBrCurrency(this.newExpense.faturamento);
+            const das = this.parseBrCurrency(this.newExpense.das);
+            const darf = this.parseBrCurrency(this.newExpense.darf);
+            const proLaboreBruto = this.parseBrCurrency(this.newExpense.proLaboreBruto);
+            const custos = this.parseBrCurrency(this.newExpense.custos);
 
             const proLaboreLiquido = proLaboreBruto - darf;
             const lucro = faturamento - das - darf - custos - proLaboreLiquido;
