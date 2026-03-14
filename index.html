@@ -3379,6 +3379,13 @@
             if (view === "formulas" || view === "expenses") {
               this.selectedClientId = null;
             }
+            // Sync URL hash — include client ID when on dashboard with a client
+            const newHash = (view === 'dashboard' && this.selectedClientId)
+              ? `#dashboard/${this.selectedClientId}`
+              : `#${view}`;
+            if (window.location.hash !== newHash) {
+              window.location.hash = newHash;
+            }
             nextTick(() => {
               this.refreshIcons();
             });
@@ -3608,7 +3615,28 @@
           // -- Actions --
           selectClient(id) {
             this.selectedClientId = id;
+            const newHash = id ? `#dashboard/${id}` : '#dashboard';
+            if (window.location.hash !== newHash) {
+              window.location.hash = newHash;
+            }
           },
+          applyRoute() {
+            const hash = window.location.hash.replace('#', '') || 'dashboard';
+            if (hash.startsWith('dashboard/')) {
+              const clientId = hash.split('/')[1];
+              this.currentView = 'dashboard';
+              const exists = this.clients.find(c => c.id === clientId);
+              this.selectedClientId = exists ? clientId : null;
+            } else if (['expenses', 'settings', 'formulas', 'dashboard'].includes(hash)) {
+              this.currentView = hash;
+              this.selectedClientId = null;
+            } else {
+              this.currentView = 'dashboard';
+              this.selectedClientId = null;
+            }
+            nextTick(() => { this.refreshIcons(); });
+          },
+
           createClient() {
             if (!this.newClient.name.trim()) return;
             const id = this.generateId();
@@ -4279,6 +4307,8 @@
               this.isAuthenticated = true;
               await this.loadData();
               document.documentElement.className = this.isDark ? "dark" : "";
+              // Restore view from URL hash after data is available
+              this.applyRoute();
             } else {
               this.isAuthenticated = false;
               this.userUid = null;
@@ -4292,6 +4322,11 @@
               }
             });
             this.refreshIcons();
+          });
+
+          // Handle browser back/forward navigation
+          window.addEventListener('hashchange', () => {
+            this.applyRoute();
           });
         },
         watch: {
