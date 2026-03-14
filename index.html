@@ -896,21 +896,28 @@
                               {{ item.name }}
                             </td>
                             <td class="px-4 py-3">
-                              <span
-                                v-if="item.type === 'hourly'"
-                                class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 uppercase"
-                                >Por Hora</span
-                              >
-                              <span
-                                v-else-if="item.type === 'buffer'"
-                                class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase whitespace-nowrap"
-                                >Ajuste</span
-                              >
-                              <span
-                                v-else
-                                class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase"
-                                >Custo Fixo</span
-                              >
+                              <div class="flex flex-wrap gap-1">
+                                <span
+                                  v-if="item.type === 'hourly'"
+                                  class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 uppercase"
+                                  >Por Hora</span
+                                >
+                                <span
+                                  v-else-if="item.type === 'buffer'"
+                                  class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase whitespace-nowrap"
+                                  >Ajuste</span
+                                >
+                                <span
+                                  v-else
+                                  class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase"
+                                  >Custo Fixo</span
+                                >
+                                <span
+                                  v-if="item.isBBEX"
+                                  class="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-700 dark:text-brand-400 border border-brand-500/20 uppercase whitespace-nowrap"
+                                  >BBex</span
+                                >
+                              </div>
                             </td>
                             <td class="px-4 py-3 text-right">
                               {{ item.type === 'hourly' ? item.value : '-' }}
@@ -1105,11 +1112,6 @@
                           class="text-slate-700 dark:text-slate-400 text-sm flex items-center gap-1"
                         >
                           Lucro
-                          <span
-                            v-if="!service.items || !service.items.some(i => i.type === 'buffer')"
-                            class="text-[10px] text-slate-700 dark:text-slate-400"
-                            >({{ (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%' }})</span
-                          >
                         </div>
                         <span
                           class="font-medium text-emerald-600 dark:text-emerald-400"
@@ -1117,38 +1119,50 @@
                           {{ formatCurrency(calculateLucro(service)) }}
                         </span>
                       </div>
-                      <!-- Sub-rows showing profit composition when a buffer item exists -->
-                      <template v-if="service.items && service.items.some(i => i.type === 'buffer')">
-                        <!-- Base markup profit sub-row -->
-                        <div class="flex justify-between items-center relative z-10 pl-4">
-                          <div class="text-xs text-emerald-700 dark:text-emerald-500 flex items-center gap-1">
-                            <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
-                            Markup {{ (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%' }}
-                          </div>
-                          <span class="text-xs font-medium text-emerald-700 dark:text-emerald-500">
-                            {{ formatCurrency(calculateFinalPrice(service) * ((service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) / 100)) }}
-                          </span>
+                      <!-- Always-visible profit composition sub-rows -->
+                      <!-- Markup sub-row -->
+                      <div class="flex justify-between items-center relative z-10 pl-4">
+                        <div class="text-xs text-emerald-700 dark:text-emerald-500 flex items-center gap-1">
+                          <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
+                          Markup {{ (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%' }}
                         </div>
-                        <!-- Adjustment sub-rows -->
-                        <div
-                          v-for="bufItem in service.items.filter(i => i.type === 'buffer')"
-                          :key="'lucro-buf-' + bufItem.id"
-                          class="flex justify-between items-center relative z-10 pl-4"
+                        <span class="text-xs font-medium text-emerald-700 dark:text-emerald-500">
+                          {{ formatCurrency(calculateFinalPrice(service) * ((service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) / 100)) }}
+                        </span>
+                      </div>
+                      <!-- BBex items sub-rows -->
+                      <div
+                        v-for="bbexItem in (service.items || []).filter(i => i.isBBEX)"
+                        :key="'lucro-bbex-' + bbexItem.id"
+                        class="flex justify-between items-center relative z-10 pl-4"
+                      >
+                        <div class="text-xs text-brand-600 dark:text-brand-400 flex items-center gap-1">
+                          <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
+                          {{ bbexItem.name }}
+                        </div>
+                        <span class="text-xs font-medium text-brand-600 dark:text-brand-400">
+                          + {{ formatCurrency(calculateItemSubtotal(service, bbexItem)) }}
+                        </span>
+                      </div>
+                      <!-- Buffer adjustment sub-rows -->
+                      <div
+                        v-for="bufItem in (service.items || []).filter(i => i.type === 'buffer')"
+                        :key="'lucro-buf-' + bufItem.id"
+                        class="flex justify-between items-center relative z-10 pl-4"
+                      >
+                        <div class="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
+                          {{ bufItem.name }}
+                        </div>
+                        <span
+                          class="text-xs font-medium"
+                          :class="calculateItemSubtotal(service, bufItem) === 0
+                            ? 'text-slate-400 dark:text-slate-500 line-through'
+                            : 'text-amber-600 dark:text-amber-400'"
                         >
-                          <div class="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                            <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
-                            {{ bufItem.name }}
-                          </div>
-                          <span
-                            class="text-xs font-medium"
-                            :class="calculateItemSubtotal(service, bufItem) === 0
-                              ? 'text-slate-400 dark:text-slate-500 line-through'
-                              : 'text-amber-600 dark:text-amber-400'"
-                          >
-                            + {{ formatCurrency(calculateItemSubtotal(service, bufItem)) }}
-                          </span>
-                        </div>
-                      </template>
+                          + {{ formatCurrency(calculateItemSubtotal(service, bufItem)) }}
+                        </span>
+                      </div>
 
                       <div
                         class="flex justify-between items-center relative z-10"
@@ -2085,6 +2099,36 @@
                     >
                   </div>
                 </div>
+
+                <label
+                  class="flex items-start gap-3 p-3 bg-brand-500/10 border border-brand-500/20 rounded-lg cursor-pointer hover:bg-brand-500/20 transition-colors"
+                >
+                  <div class="relative flex items-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      v-model="newItem.isBBEX"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="w-4 h-4 rounded border border-brand-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-brand-500 peer-checked:border-brand-500 flex items-center justify-center"
+                    >
+                      <i
+                        data-lucide="check"
+                        class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100"
+                      ></i>
+                    </div>
+                  </div>
+                  <div>
+                    <span
+                      class="block text-sm font-medium text-brand-700 dark:text-brand-300"
+                      >Serviço próprio BBex</span
+                    >
+                    <span
+                      class="block text-xs text-brand-700/80 dark:text-brand-400/80 mt-0.5 leading-relaxed"
+                      >O subtotal deste item será contabilizado no Lucro, não nos Custos.</span
+                    >
+                  </div>
+                </label>
               </div>
               <div
                 class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3"
@@ -2565,6 +2609,36 @@
                     >
                   </div>
                 </div>
+
+                <label
+                  class="flex items-start gap-3 p-3 bg-brand-500/10 border border-brand-500/20 rounded-lg cursor-pointer hover:bg-brand-500/20 transition-colors"
+                >
+                  <div class="relative flex items-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      v-model="editItemData.isBBEX"
+                      class="peer sr-only"
+                    />
+                    <div
+                      class="w-4 h-4 rounded border border-brand-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-brand-500 peer-checked:border-brand-500 flex items-center justify-center"
+                    >
+                      <i
+                        data-lucide="check"
+                        class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100"
+                      ></i>
+                    </div>
+                  </div>
+                  <div>
+                    <span
+                      class="block text-sm font-medium text-brand-700 dark:text-brand-300"
+                      >Serviço próprio BBex</span
+                    >
+                    <span
+                      class="block text-xs text-brand-700/80 dark:text-brand-400/80 mt-0.5 leading-relaxed"
+                      >O subtotal deste item será contabilizado no Lucro, não nos Custos.</span
+                    >
+                  </div>
+                </label>
                 <div
                   class="p-6 border-t border-slate-300 dark:border-slate-800 flex justify-end gap-3"
                 >
@@ -3403,9 +3477,9 @@
           },
           calculateCustosParaPainel(service) {
             if (!service.items) return 0;
-            // Exclude buffer items — they contribute to profit, not costs
+            // Exclude buffer and BBex items from cost display
             return service.items
-              .filter((i) => i.type !== "buffer")
+              .filter((i) => i.type !== "buffer" && !i.isBBEX)
               .reduce(
                 (sum, item) => sum + this.calculateItemSubtotal(service, item),
                 0,
@@ -3450,13 +3524,20 @@
                 0,
               );
 
+            const bbexSubtotal = (service.items || [])
+              .filter((i) => i.isBBEX)
+              .reduce(
+                (sum, i) => sum + this.calculateItemSubtotal(service, i),
+                0,
+              );
+
             const finalPrice = this.calculateFinalPrice(service);
             const profitMargin =
               service.profitMargin !== undefined
                 ? service.profitMargin
                 : this.globalParams.profitMargin;
 
-            return finalPrice * (profitMargin / 100) + bufferSubtotal;
+            return finalPrice * (profitMargin / 100) + bufferSubtotal + bbexSubtotal;
           },
 
           // -- Helpers --
@@ -3609,7 +3690,7 @@
 
           openItemModal(serviceId) {
             this.targetServiceIdForNewItem = serviceId;
-            this.newItem = { name: "", type: "hourly", value: null };
+            this.newItem = { name: "", type: "hourly", value: null, isBBEX: false };
             this.showNewItemModal = true;
           },
           createItem() {
@@ -3628,6 +3709,7 @@
                 name: this.newItem.name,
                 type: this.newItem.type,
                 value: Number(this.newItem.value || 0),
+                isBBEX: !!this.newItem.isBBEX,
               });
             }
             this.showNewItemModal = false;
@@ -3940,6 +4022,7 @@
                 item.name = this.editItemData.name;
                 item.type = this.editItemData.type;
                 item.value = Number(this.editItemData.value || 0);
+                item.isBBEX = !!this.editItemData.isBBEX;
               }
             }
             this.showEditItemModal = false;
