@@ -808,29 +808,6 @@
                       </div>
                     </div>
 
-                    <div
-                      class="flex items-center gap-1.5 cursor-default"
-                      title="Considerar horas como lucro (editável no modal de edição)"
-                    >
-                      <div
-                        class="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors"
-                        :class="service.disableLucroMargin ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-slate-400 dark:border-slate-600'"
-                      >
-                        <span v-show="service.disableLucroMargin" class="flex"
-                          ><i
-                            data-lucide="check"
-                            class="w-2.5 h-2.5 text-slate-900"
-                          ></i
-                        ></span>
-                      </div>
-                      <span
-                        class="text-sm select-none transition-colors"
-                        :class="service.disableLucroMargin ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-500'"
-                      >
-                        Horas como lucro
-                      </span>
-                    </div>
-
                     <div class="w-px h-6 bg-slate-800"></div>
 
                     <button
@@ -1131,15 +1108,11 @@
                           <span
                             v-if="!service.items || !service.items.some(i => i.type === 'buffer')"
                             class="text-[10px] text-slate-700 dark:text-slate-400"
-                            >({{ service.disableLucroMargin ? 'Integral' :
-                            ((service.profitMargin !== undefined ?
-                            service.profitMargin : globalParams.profitMargin) +
-                            '%') }})</span
+                            >({{ (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%' }})</span
                           >
                         </div>
                         <span
-                          class="font-medium"
-                          :class="service.disableLucroMargin ? 'text-slate-600' : 'text-emerald-600 dark:text-emerald-400'"
+                          class="font-medium text-emerald-600 dark:text-emerald-400"
                         >
                           {{ formatCurrency(calculateLucro(service)) }}
                         </span>
@@ -1150,10 +1123,10 @@
                         <div class="flex justify-between items-center relative z-10 pl-4">
                           <div class="text-xs text-emerald-700 dark:text-emerald-500 flex items-center gap-1">
                             <i data-lucide="corner-down-right" class="w-3 h-3 opacity-60"></i>
-                            Markup {{ service.disableLucroMargin ? 'Integral' : ((service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%') }}
+                            Markup {{ (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) + '%' }}
                           </div>
                           <span class="text-xs font-medium text-emerald-700 dark:text-emerald-500">
-                            {{ formatCurrency(calculateFinalPrice(service) * ((service.disableLucroMargin ? 0 : (service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin)) / 100)) }}
+                            {{ formatCurrency(calculateFinalPrice(service) * ((service.profitMargin !== undefined ? service.profitMargin : globalParams.profitMargin) / 100)) }}
                           </span>
                         </div>
                         <!-- Adjustment sub-rows -->
@@ -1230,11 +1203,6 @@
                       <p>
                         Preço calculado utilizando markup por dentro com base
                         nos parâmetros.
-                        <span
-                          v-if="service.disableLucroMargin"
-                          class="text-amber-600 dark:text-amber-500/70"
-                          >As horas de trabalho atuam como lucro integral.</span
-                        >
                       </p>
                     </div>
                   </div>
@@ -1922,37 +1890,6 @@
                 </div>
 
                 <label
-                  class="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg cursor-pointer hover:bg-amber-500/20 transition-colors"
-                >
-                  <div class="relative flex items-center mt-0.5">
-                    <input
-                      type="checkbox"
-                      v-model="newService.disableLucroMargin"
-                      class="peer sr-only"
-                    />
-                    <div
-                      class="w-4 h-4 rounded border border-amber-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-amber-500 peer-checked:border-amber-500 flex items-center justify-center"
-                    >
-                      <i
-                        data-lucide="check"
-                        class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
-                      ></i>
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      class="block text-sm font-medium text-amber-700 dark:text-amber-200"
-                      >Considerar horas como lucro</span
-                    >
-                    <span
-                      class="block text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5 leading-relaxed"
-                      >Custos baseados em horas atuam exclusivamente como Lucro,
-                      ignorando a margem de lucro percentual.</span
-                    >
-                  </div>
-                </label>
-
-                <label
                   v-if="newService.type === 'one-time'"
                   class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
                 >
@@ -2432,37 +2369,6 @@
                     </div>
                   </div>
                 </div>
-
-                <label
-                  class="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg cursor-pointer hover:bg-amber-500/20 transition-colors"
-                >
-                  <div class="relative flex items-center mt-0.5">
-                    <input
-                      type="checkbox"
-                      v-model="editServiceData.disableLucroMargin"
-                      class="peer sr-only"
-                    />
-                    <div
-                      class="w-4 h-4 rounded border border-amber-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-amber-500 peer-checked:border-amber-500 flex items-center justify-center"
-                    >
-                      <i
-                        data-lucide="check"
-                        class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
-                      ></i>
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      class="block text-sm font-medium text-amber-700 dark:text-amber-200"
-                      >Considerar horas como lucro</span
-                    >
-                    <span
-                      class="block text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5 leading-relaxed"
-                      >Custos baseados em horas atuam exclusivamente como Lucro,
-                      ignorando a margem de lucro percentual.</span
-                    >
-                  </div>
-                </label>
 
                 <label
                   v-if="editServiceData.type === 'one-time'"
@@ -3160,7 +3066,6 @@
             newService: {
               name: "",
               type: "one-time",
-              disableLucroMargin: false,
               paid: false,
               isActive: true,
             },
@@ -3178,7 +3083,6 @@
               id: "",
               name: "",
               type: "one-time",
-              disableLucroMargin: false,
               hourlyRate: 0,
               profitMargin: 0,
               taxMargin: 0,
@@ -3476,9 +3380,7 @@
                 ? service.profitMargin
                 : this.globalParams.profitMargin;
             const taxMarginDec = taxMargin / 100;
-            const profitMarginDec = service.disableLucroMargin
-              ? 0
-              : profitMargin / 100;
+            const profitMarginDec = profitMargin / 100;
             return 1 - (taxMarginDec + profitMarginDec);
           },
           canAddBuffer(serviceId, currentItemId = null) {
@@ -3502,15 +3404,6 @@
           calculateCustosParaPainel(service) {
             if (!service.items) return 0;
             // Exclude buffer items — they contribute to profit, not costs
-            if (service.disableLucroMargin) {
-              return service.items
-                .filter((i) => i.type === "fixed")
-                .reduce(
-                  (sum, item) =>
-                    sum + this.calculateItemSubtotal(service, item),
-                  0,
-                );
-            }
             return service.items
               .filter((i) => i.type !== "buffer")
               .reduce(
@@ -3556,18 +3449,6 @@
                 (sum, i) => sum + this.calculateItemSubtotal(service, i),
                 0,
               );
-
-            if (service.disableLucroMargin) {
-              if (!service.items) return bufferSubtotal;
-              const hourlyProfit = service.items
-                .filter((i) => i.type === "hourly")
-                .reduce(
-                  (sum, item) =>
-                    sum + this.calculateItemSubtotal(service, item),
-                  0,
-                );
-              return hourlyProfit + bufferSubtotal;
-            }
 
             const finalPrice = this.calculateFinalPrice(service);
             const profitMargin =
@@ -3659,7 +3540,6 @@
             this.newService = {
               name: "",
               type: "one-time",
-              disableLucroMargin: false,
               paid: false,
               isActive: true,
             };
@@ -3671,7 +3551,6 @@
               id: this.generateId(),
               name: this.newService.name,
               type: this.newService.type,
-              disableLucroMargin: this.newService.disableLucroMargin,
               paid:
                 this.newService.type === "one-time"
                   ? this.newService.paid
@@ -4022,8 +3901,6 @@
             if (service) {
               service.name = this.editServiceData.name;
               service.type = this.editServiceData.type;
-              service.disableLucroMargin =
-                this.editServiceData.disableLucroMargin;
               service.paid =
                 this.editServiceData.type === "one-time"
                   ? this.editServiceData.paid
