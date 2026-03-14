@@ -192,82 +192,63 @@
         <aside
           class="w-72 bg-slate-50 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-800 flex flex-col h-full shrink-0 z-20 shadow-xl relative"
         >
-          <div class="p-6 border-b border-slate-300 dark:border-slate-800">
-            <h1
-              class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-blue-500"
-            >
-              BBEX
-            </h1>
-            <p
-              class="text-xs text-slate-700 dark:text-slate-400 uppercase tracking-widest mt-1 font-semibold"
-            >
-              Gerenciador de Preços
-            </p>
+          <div class="p-6 border-b border-slate-300 dark:border-slate-800 flex items-center justify-between">
+            <div>
+              <h1
+                class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-blue-500"
+              >
+                BBEX
+              </h1>
+              <p
+                class="text-xs text-slate-700 dark:text-slate-400 uppercase tracking-widest mt-1 font-semibold"
+              >
+                Gerenciador de Preços
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="group relative flex items-center justify-center">
+                <span v-show="syncStatus === 'synced'" class="flex"
+                  ><i
+                    data-lucide="check-circle-2"
+                    class="w-4.5 h-4.5 text-emerald-500"
+                  ></i
+                ></span>
+                <span v-show="syncStatus === 'syncing'" class="flex"
+                  ><i
+                    data-lucide="loader-2"
+                    class="w-4.5 h-4.5 text-amber-500 animate-spin"
+                  ></i
+                ></span>
+                <span v-show="syncStatus === 'error'" class="flex"
+                  ><i
+                    data-lucide="alert-circle"
+                    class="w-4.5 h-4.5 text-red-500"
+                  ></i
+                ></span>
+                <div
+                  class="absolute right-0 top-full mt-2 w-max px-2 py-1 bg-slate-800 text-xs text-slate-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+                >
+                  <span v-if="syncStatus === 'synced'">Sincronizado na Nuvem</span>
+                  <span v-else-if="syncStatus === 'syncing'">Sincronizando...</span>
+                  <span v-else-if="syncStatus === 'error'">Erro de Sincronização</span>
+                </div>
+              </div>
+              <button
+                @click="isDark = !isDark"
+                class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
+              >
+                <span v-show="!isDark" class="flex"
+                  ><i data-lucide="moon" class="w-4 h-4"></i
+                ></span>
+                <span v-show="isDark" class="flex"
+                  ><i data-lucide="sun" class="w-4 h-4"></i
+                ></span>
+              </button>
+            </div>
           </div>
 
           <div class="p-6 flex-1 overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-              <h2
-                class="text-sm uppercase tracking-wider text-slate-700 dark:text-slate-400 font-semibold drop-shadow-sm flex items-center gap-2"
-              >
-                <i data-lucide="box" class="w-4 h-4"></i> Meu Espaço
-              </h2>
-              <div class="flex items-center gap-2">
-                <div class="group relative flex items-center justify-center">
-                  <span v-show="syncStatus === 'synced'" class="flex"
-                    ><i
-                      data-lucide="check-circle-2"
-                      class="w-4.5 h-4.5 text-emerald-500"
-                    ></i
-                  ></span>
-                  <span v-show="syncStatus === 'syncing'" class="flex"
-                    ><i
-                      data-lucide="loader-2"
-                      class="w-4.5 h-4.5 text-amber-500 animate-spin"
-                    ></i
-                  ></span>
-                  <span v-show="syncStatus === 'error'" class="flex"
-                    ><i
-                      data-lucide="alert-circle"
-                      class="w-4.5 h-4.5 text-red-500"
-                    ></i
-                  ></span>
-
-                  <div
-                    class="absolute right-0 top-full mt-2 w-max px-2 py-1 bg-slate-800 text-xs text-slate-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
-                  >
-                    <span v-if="syncStatus === 'synced'"
-                      >Sincronizado na Nuvem</span
-                    >
-                    <span v-else-if="syncStatus === 'syncing'"
-                      >Sincronizando...</span
-                    >
-                    <span v-else-if="syncStatus === 'error'"
-                      >Erro de Sincronização</span
-                    >
-                  </div>
-                </div>
-
-                <button
-                  @click="isDark = !isDark"
-                  class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
-                >
-                  <span v-show="!isDark" class="flex"
-                    ><i data-lucide="moon" class="w-4 h-4"></i
-                  ></span>
-                  <span v-show="isDark" class="flex"
-                    ><i data-lucide="sun" class="w-4 h-4"></i
-                  ></span>
-                </button>
-              </div>
-            </div>
-
             <div class="px-2 pt-2 pb-4">
-              <h2
-                class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2 ml-1"
-              >
-                Menu
-              </h2>
               <ul class="space-y-1">
                 <li>
                   <button
@@ -276,7 +257,17 @@
                          currentView === 'dashboard' && !selectedClientId ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
                   >
                     <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                    Dashboard
+                    Painel
+                  </button>
+                </li>
+                <li>
+                  <button
+                    @click="switchView('expenses')"
+                    :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 group', 
+                         currentView === 'expenses' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
+                  >
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                    Despesas CNPJ
                   </button>
                 </li>
                 <li>
@@ -297,16 +288,6 @@
                   >
                     <i data-lucide="calculator" class="w-4 h-4"></i>
                     Entenda o Cálculo
-                  </button>
-                </li>
-                <li>
-                  <button
-                    @click="switchView('expenses')"
-                    :class="['w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 group', 
-                         currentView === 'expenses' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium']"
-                  >
-                    <i data-lucide="receipt" class="w-4 h-4"></i>
-                    Despesas CNPJ
                   </button>
                 </li>
               </ul>
