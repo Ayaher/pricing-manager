@@ -406,7 +406,7 @@
 
             <!-- Dashboard / Empty State -->
             <div
-              v-if="!selectedClient"
+              v-show="!selectedClient"
               class="flex-1 overflow-y-auto scrollbar-hide w-full"
             >
               <div class="p-8 max-w-7xl mx-auto">
@@ -3347,7 +3347,18 @@
           currentView(newVal) {
             if (newVal === "dashboard") {
               this.$nextTick(() => {
-                this.renderExpenseChart();
+                this.$nextTick(() => {
+                  this.renderExpenseChart();
+                });
+              });
+            }
+          },
+          selectedClientId(newVal) {
+            if (newVal === null && this.currentView === "dashboard") {
+              this.$nextTick(() => {
+                this.$nextTick(() => {
+                  this.renderExpenseChart();
+                });
               });
             }
           },
@@ -4168,7 +4179,7 @@
                   {
                     label: 'Faturamento',
                     data: faturamentoData,
-                    borderColor: '#0f172a', // slate-900
+                    borderColor: '#3b82f6', // blue-500
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.4
@@ -4249,11 +4260,7 @@
               }
             });
             
-              // Adjust dark mode slate color override for faturamento correctly
-              if(this.isDark) {
-                 this.expenseChartInstance.data.datasets[0].borderColor = '#f8fafc'; // slate-50
-                 this.expenseChartInstance.update();
-              }
+
             });
           },
           refreshIcons() {
