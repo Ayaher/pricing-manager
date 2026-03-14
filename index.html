@@ -309,11 +309,7 @@
                          selectedClientId === client.id ? 'bg-brand-500/10 text-brand-600 dark:text-brand-600 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200']"
                   >
                     <span class="truncate">{{ client.name }}</span>
-                    <i
-                      data-lucide="chevron-right"
-                      class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                      :class="selectedClientId === client.id ? 'opacity-100 text-brand-600 dark:text-brand-400' : ''"
-                    ></i>
+
                   </button>
                 </li>
                 <li
