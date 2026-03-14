@@ -875,7 +875,7 @@
                         >
                           <tr>
                             <th class="px-4 py-3">Item</th>
-                            <th class="px-4 py-3 w-32">Tipo</th>
+                            <th class="px-4 py-3 w-48">Tipo</th>
                             <th class="px-4 py-3 text-right w-24">Horas</th>
                             <th class="px-4 py-3 text-right w-32">
                               Custo Fixo
@@ -895,8 +895,8 @@
                             <td class="px-4 py-3 font-medium">
                               {{ item.name }}
                             </td>
-                            <td class="px-4 py-3">
-                              <div class="flex flex-wrap gap-1">
+                            <td class="px-4 py-3 whitespace-nowrap">
+                              <div class="flex items-center gap-1.5">
                                 <span
                                   v-if="item.type === 'hourly'"
                                   class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 uppercase"
