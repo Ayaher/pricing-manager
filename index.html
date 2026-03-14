@@ -598,23 +598,7 @@
                           {{ formatCurrency(getClientLucroRecorrente(client)) }}
                         </span>
                       </div>
-                      <div
-                        class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"
-                      ></div>
-                      <div
-                        class="flex flex-col items-end"
-                        title="Lucro + valor dos ajustes de preço (buffers)"
-                      >
-                        <span
-                          class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold"
-                          >Lucro Ajustado</span
-                        >
-                        <span
-                          class="font-bold text-emerald-500 dark:text-emerald-300 transition-colors"
-                        >
-                          {{ formatCurrency(getClientLucroAjustado(client)) }}
-                        </span>
-                      </div>
+
                       <div
                         class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"
                       ></div>
@@ -1177,6 +1161,7 @@
                         >
                           Lucro
                           <span
+                            v-if="!service.items || !service.items.some(i => i.type === 'buffer')"
                             class="text-[10px] text-slate-700 dark:text-slate-400"
                             >({{ service.disableLucroMargin ? 'Integral' :
                             ((service.profitMargin !== undefined ?
