@@ -722,11 +722,11 @@
                           {{ service.type === 'recurring' ? 'Pagamento recorrente' : 'Pagamento único' }}
                         </span>
                         <span
-                          v-if="service.type === 'one-time'"
+                          v-if="service.billing && service.billing.enabled"
                           :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold ml-1', 
-                        service.paid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20']"
+                        getServiceInvoiceSummary(service).overdue > 0 ? 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' : getServiceInvoiceSummary(service).pending > 0 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20']"
                         >
-                          {{ service.paid ? 'Pago' : 'Pendente' }}
+                          {{ getServiceInvoiceSummary(service).overdue > 0 ? (getServiceInvoiceSummary(service).overdue + ' em atraso') : getServiceInvoiceSummary(service).pending > 0 ? (getServiceInvoiceSummary(service).pending + ' pendente(s)') : 'Em dia' }}
                         </span>
                         <span
                           v-if="service.type === 'recurring'"
@@ -807,6 +807,14 @@
                         >
                       </div>
                     </div>
+
+                    <button
+                      @click.stop="openInvoiceView(service.id)"
+                      class="text-slate-700 dark:text-slate-400 hover:text-purple-500 transition-colors p-1"
+                      title="Gerenciar Faturas"
+                    >
+                      <span><i data-lucide="file-text" class="w-4 h-4"></i></span>
+                    </button>
 
                     <div class="w-px h-6 bg-slate-800"></div>
 
@@ -1746,6 +1754,191 @@
               </div>
             </div>
           </div>
+
+          <!-- Invoices View -->
+          <div
+            v-show="currentView === 'invoices'"
+            class="flex-col flex w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950"
+          >
+            <!-- Header -->
+          <header class="h-20 border-b border-slate-300 dark:border-slate-800/80 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-8 flex items-center justify-between shrink-0 z-10">
+            <div class="flex items-center gap-4">
+              <button
+                @click="switchView('dashboard')"
+                class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center"
+              >
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              </button>
+              <div>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  <i data-lucide="file-text" class="w-5 h-5 text-purple-500"></i>
+                  {{ selectedInvoiceService?.name }}
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {{ selectedClient?.name }} · {{ selectedInvoiceService?.type === 'recurring' ? 'Recorrente Mensal' : 'Pagamento Único' }}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <template v-if="selectedInvoiceService?.billing?.enabled">
+                <span v-if="getServiceInvoiceSummary(selectedInvoiceService).paid > 0" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+                  {{ getServiceInvoiceSummary(selectedInvoiceService).paid }} paga(s)
+                </span>
+                <span v-if="getServiceInvoiceSummary(selectedInvoiceService).overdue > 0" class="text-xs px-2.5 py-1 rounded-full bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20 font-semibold">
+                  {{ getServiceInvoiceSummary(selectedInvoiceService).overdue }} em atraso
+                </span>
+                <span v-if="getServiceInvoiceSummary(selectedInvoiceService).pending > 0" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-semibold">
+                  {{ getServiceInvoiceSummary(selectedInvoiceService).pending }} pendente(s)
+                </span>
+              </template>
+              <button
+                @click="openBillingSettingsModal"
+                class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20"
+              >
+                <i data-lucide="settings-2" class="w-4 h-4"></i> Configurar Faturamento
+              </button>
+            </div>
+          </header>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto p-8 w-full scrollbar-hide">
+
+            <!-- Billing NOT enabled -->
+            <div
+              v-if="!selectedInvoiceService?.billing?.enabled"
+              class="flex flex-col items-center justify-center p-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 text-center max-w-2xl mx-auto mt-8"
+            >
+              <i data-lucide="file-x-2" class="w-14 h-14 text-slate-300 dark:text-slate-600 mb-5"></i>
+              <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Faturamento não ativado</h3>
+              <p class="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed max-w-sm">
+                Ative o faturamento para gerar faturas automáticas e acompanhar pagamentos deste serviço.
+              </p>
+              <button
+                @click="openBillingSettingsModal"
+                class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20"
+              >
+                <i data-lucide="zap" class="w-4 h-4"></i> Ativar Faturamento
+              </button>
+            </div>
+
+            <!-- Billing IS enabled -->
+            <div v-else class="max-w-6xl mx-auto">
+
+              <!-- Invoice table card -->
+              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-brand-500"></i>
+                    Faturas
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Emissão no dia {{ selectedInvoiceService?.billing?.dayOfMonth || 1 }} · Vencimento em {{ selectedInvoiceService?.billing?.dueDays || 7 }} dia(s)
+                  </p>
+                </div>
+
+                <!-- Empty state -->
+                <div
+                  v-if="!selectedInvoiceService.invoices || selectedInvoiceService.invoices.length === 0"
+                  class="p-12 text-center text-slate-500 dark:text-slate-400 text-sm"
+                >
+                  Nenhuma fatura gerada ainda.
+                </div>
+
+                <!-- Invoice table -->
+                <div v-else class="overflow-x-auto">
+                  <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-800 font-semibold">
+                      <tr>
+                        <th class="px-6 py-3">Período</th>
+                        <th class="px-6 py-3">Emissão</th>
+                        <th class="px-6 py-3">Vencimento</th>
+                        <th class="px-6 py-3 text-right">Valor Base</th>
+                        <th class="px-6 py-3 text-right">Encargos</th>
+                        <th class="px-6 py-3 text-right">Total</th>
+                        <th class="px-6 py-3 text-center">Status</th>
+                        <th class="px-6 py-3 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                      <template v-for="inv in selectedInvoiceService.invoices" :key="inv.id">
+                        <!-- Main invoice row -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td class="px-6 py-4 font-medium">{{ formatPeriod(inv.period) }}</td>
+                          <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ formatDate(inv.issueDate) }}</td>
+                          <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ formatDate(inv.dueDate) }}</td>
+                          <td class="px-6 py-4 text-right font-mono">{{ formatCurrency(inv.baseAmount) }}</td>
+                          <td class="px-6 py-4 text-right font-mono" :class="inv.carryOver ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-400'">
+                            {{ inv.carryOver ? formatCurrency((inv.carryOver.lateFee || 0) + (inv.carryOver.interest || 0)) : '—' }}
+                          </td>
+                          <td class="px-6 py-4 text-right font-mono font-bold">
+                            {{ formatCurrency(getInvoiceTotal(inv)) }}
+                          </td>
+                          <td class="px-6 py-4 text-center">
+                            <span :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap',
+                              inv.status === 'paid' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' :
+                              inv.status === 'overdue' ? 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' :
+                              'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20']">
+                              {{ inv.status === 'paid' ? 'Pago' : inv.status === 'overdue' ? 'Em Atraso' : 'Pendente' }}
+                            </span>
+                          </td>
+                          <td class="px-6 py-4">
+                            <div class="flex items-center justify-end gap-1">
+                              <button
+                                v-if="inv.status !== 'paid'"
+                                @click="openMarkPaidModal(inv.id)"
+                                class="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors font-medium"
+                                title="Registrar Pagamento"
+                              >Pagar</button>
+                              <button
+                                v-if="inv.status === 'paid'"
+                                @click="openInvoiceDetailModal(inv)"
+                                class="text-xs px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors font-medium"
+                                title="Ver Pagamento"
+                              >Ver</button>
+                              <button
+                                @click="openEditInvoiceModal(inv)"
+                                class="p-1.5 text-slate-400 hover:text-brand-500 transition-colors rounded"
+                                title="Editar Fatura"
+                              ><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                              <button
+                                v-if="inv.status !== 'paid'"
+                                @click="confirmDeleteInvoice(inv)"
+                                class="p-1.5 text-slate-400 hover:text-red-400 transition-colors rounded"
+                                title="Excluir Fatura"
+                              ><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                          </td>
+                        </tr>
+                        <!-- Carry-over detail row -->
+                        <tr v-if="inv.carryOver" class="bg-red-50/50 dark:bg-red-900/5 border-none">
+                          <td colspan="8" class="px-6 py-2 text-xs text-red-600 dark:text-red-400 pl-14">
+                            <i data-lucide="corner-down-right" class="w-3 h-3 inline mr-1.5 align-middle"></i>
+                            {{ inv.carryOver.description }}
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Summary cards -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+                  <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1.5">Total Recebido</p>
+                  <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(getServiceInvoiceSummary(selectedInvoiceService).totalPaid) }}</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+                  <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1.5">A Receber</p>
+                  <p class="text-2xl font-bold text-amber-500 dark:text-amber-400">{{ formatCurrency(getServiceInvoiceSummary(selectedInvoiceService).totalPending) }}</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+                  <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1.5">Em Atraso</p>
+                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatCurrency(getServiceInvoiceSummary(selectedInvoiceService).totalOverdue) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </main>
 
         <!-- Modal: Novo Cliente -->
@@ -1902,38 +2095,6 @@
                     </label>
                   </div>
                 </div>
-
-                <label
-                  v-if="newService.type === 'one-time'"
-                  class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
-                >
-                  <div class="relative flex items-center mt-0.5">
-                    <input
-                      type="checkbox"
-                      v-model="newService.paid"
-                      class="peer sr-only"
-                    />
-                    <div
-                      class="w-4 h-4 rounded border border-emerald-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 flex items-center justify-center"
-                    >
-                      <i
-                        data-lucide="check"
-                        class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
-                      ></i>
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      class="block text-sm font-medium text-emerald-700 dark:text-emerald-200"
-                      >Serviço já foi pago</span
-                    >
-                    <span
-                      class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
-                      >Serviços pagos não entram no cálculo "Receita Avulsa" do
-                      Dashboard.</span
-                    >
-                  </div>
-                </label>
 
                 <label
                   v-if="newService.type === 'recurring'"
@@ -2415,38 +2576,6 @@
                 </div>
 
                 <label
-                  v-if="editServiceData.type === 'one-time'"
-                  class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
-                >
-                  <div class="relative flex items-center mt-0.5">
-                    <input
-                      type="checkbox"
-                      v-model="editServiceData.paid"
-                      class="peer sr-only"
-                    />
-                    <div
-                      class="w-4 h-4 rounded border border-emerald-500/50 bg-slate-200 dark:bg-slate-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 flex items-center justify-center"
-                    >
-                      <i
-                        data-lucide="check"
-                        class="w-3 h-3 text-slate-900 opacity-0 peer-checked:opacity-100"
-                      ></i>
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      class="block text-sm font-medium text-emerald-700 dark:text-emerald-200"
-                      >Serviço já foi pago</span
-                    >
-                    <span
-                      class="block text-xs text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed"
-                      >Serviços pagos não entram no cálculo "Receita Avulsa" do
-                      Dashboard.</span
-                    >
-                  </div>
-                </label>
-
-                <label
                   v-if="editServiceData.type === 'recurring'"
                   class="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
                 >
@@ -2851,12 +2980,12 @@
                   class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed"
                 >
                   Tem certeza que deseja excluir
-                  <strong>{{ deleteTargetEntity?.name }}</strong>? Esta ação não
+                  <strong>{{ deleteEntityType === 'invoice' ? formatPeriod(deleteTargetEntity?.period) : deleteTargetEntity?.name }}</strong>? Esta ação não
                   poderá ser desfeita.
                 </p>
 
                 <div
-                  v-if="deleteEntityType !== 'item' && deleteEntityType !== 'expense'"
+                  v-if="deleteEntityType !== 'item' && deleteEntityType !== 'expense' && deleteEntityType !== 'invoice'"
                   class="bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/10 rounded-lg p-4 mt-4"
                 >
                   <label
@@ -3071,6 +3200,286 @@
             </div>
           </div>
         </transition>
+
+        <!-- Modal: Billing Settings -->
+        <transition name="fade">
+          <div v-if="showBillingSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="showBillingSettingsModal = false"></div>
+            <div class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl relative z-10 py-2 max-h-[90vh] overflow-y-auto scrollbar-hide">
+              <div class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="settings-2" class="w-5 h-5 text-brand-500"></i>
+                  Configurações de Faturamento
+                </h3>
+                <button @click="showBillingSettingsModal = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="p-6 space-y-5">
+                <!-- Enable toggle -->
+                <label class="flex items-center justify-between p-4 bg-brand-500/5 border border-brand-500/20 rounded-xl cursor-pointer hover:bg-brand-500/10 transition-colors">
+                  <div>
+                    <span class="block font-medium text-slate-900 dark:text-slate-100 text-sm">Faturamento ativado</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Gera faturas automaticamente ao salvar.</span>
+                  </div>
+                  <div class="relative shrink-0">
+                    <input type="checkbox" v-model="billingSettingsForm.enabled" class="sr-only peer" />
+                    <div class="w-10 h-6 bg-slate-300 dark:bg-slate-700 rounded-full peer-checked:bg-brand-500 transition-colors"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                  </div>
+                </label>
+                <div v-if="billingSettingsForm.enabled" class="space-y-4 pt-1">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Data de início do faturamento</label>
+                    <input type="date" v-model="billingSettingsForm.startDate" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Dia de emissão</label>
+                      <input type="number" min="1" max="28" v-model.number="billingSettingsForm.dayOfMonth" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Dia do mês (1–28)</p>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Prazo de vencimento</label>
+                      <div class="relative">
+                        <input type="number" min="0" v-model.number="billingSettingsForm.dueDays" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-12" />
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400 pointer-events-none">dias</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-3">
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500"></i>
+                      Encargos por Atraso
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tipo de multa</label>
+                        <select v-model="billingSettingsForm.lateFeeType" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                          <option value="percent">Percentual (%)</option>
+                          <option value="fixed">Valor Fixo (R$)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Multa {{ billingSettingsForm.lateFeeType === 'percent' ? '(%)' : '(R$)' }}
+                        </label>
+                        <input type="number" step="0.01" min="0" v-model.number="billingSettingsForm.lateFeeValue" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Juros diário (%)</label>
+                      <input type="number" step="0.001" min="0" v-model.number="billingSettingsForm.dailyInterestRate" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ex: 0.033 = 1% ao mês (30 dias)</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+                    <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <p>Alterações no prazo de vencimento e dia de emissão afetam apenas faturas ainda não geradas. Para editar uma fatura específica, use o botão "Editar" na lista.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                <button @click="showBillingSettingsModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Cancelar</button>
+                <button @click="saveBillingSettings" class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow">Salvar Configurações</button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Modal: Mark Paid -->
+        <transition name="fade">
+          <div v-if="showMarkPaidModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="showMarkPaidModal = false"></div>
+            <div class="bg-slate-50 dark:bg-slate-900 border border-emerald-500/30 dark:border-emerald-500/20 w-full max-w-lg rounded-2xl shadow-2xl relative z-10 py-2 max-h-[90vh] overflow-y-auto scrollbar-hide">
+              <div class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+                  Registrar Pagamento
+                </h3>
+                <button @click="showMarkPaidModal = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="p-6 space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Data do Pagamento</label>
+                    <input type="date" v-model="markPaidForm.date" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Valor Pago (R$)</label>
+                    <input type="text" v-model="markPaidForm.paidAmount" @blur="formatInputCurrency('markPaidForm.paidAmount')" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="0,00" />
+                  </div>
+                </div>
+                <!-- Proportional calculator -->
+                <div>
+                  <button @click="markPaidForm.showProportional = !markPaidForm.showProportional" class="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                    <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                    {{ markPaidForm.showProportional ? 'Fechar calculadora proporcional' : 'Calcular valor proporcional' }}
+                  </button>
+                  <div v-if="markPaidForm.showProportional" class="mt-3 p-4 bg-brand-500/5 border border-brand-500/20 rounded-xl space-y-3">
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Calcula o valor para um período parcial do mês.</p>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dias pagos</label>
+                        <input type="number" v-model.number="markPaidForm.proportionalDays" min="1" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="13" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de dias no mês</label>
+                        <input type="number" v-model.number="markPaidForm.proportionalTotal" min="1" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="31" />
+                      </div>
+                    </div>
+                    <button @click="recalcProportionalAmount" class="w-full py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition-colors">
+                      Aplicar valor proporcional
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Observações</label>
+                  <textarea v-model="markPaidForm.notes" rows="3" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none text-sm" placeholder="Forma de pagamento, referência do PIX, etc..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Nota Fiscal / Comprovante</label>
+                  <label class="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-brand-500/50 hover:bg-brand-500/5 transition-all group">
+                    <input type="file" accept="image/*,application/pdf" class="sr-only" @change="handleReceiptUpload" />
+                    <template v-if="!markPaidForm.receiptBase64">
+                      <i data-lucide="upload" class="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-colors"></i>
+                      <span class="text-sm text-slate-500 group-hover:text-brand-500 transition-colors">Clique para fazer upload (imagem ou PDF, ~500KB máx)</span>
+                    </template>
+                    <template v-else>
+                      <i data-lucide="file-check" class="w-5 h-5 text-emerald-500"></i>
+                      <span class="text-sm text-emerald-600 dark:text-emerald-400 font-medium truncate max-w-xs">{{ markPaidForm.receiptName }}</span>
+                      <span class="text-xs text-slate-400">(substituir)</span>
+                    </template>
+                  </label>
+                </div>
+              </div>
+              <div class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                <button @click="showMarkPaidModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Cancelar</button>
+                <button @click="saveMarkPaid" class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors shadow flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4"></i> Confirmar Pagamento
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Modal: Edit Invoice -->
+        <transition name="fade">
+          <div v-if="showEditInvoiceModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="showEditInvoiceModal = false"></div>
+            <div class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2">
+              <div class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Editar Fatura</h3>
+                <button @click="showEditInvoiceModal = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Data de Emissão</label>
+                    <input type="date" v-model="editInvoiceForm.issueDate" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vencimento</label>
+                    <input type="date" v-model="editInvoiceForm.dueDate" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Valor Base (R$)</label>
+                  <input type="text" v-model="editInvoiceForm.baseAmount" @blur="formatInputCurrency('editInvoiceForm.baseAmount')" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="0,00" />
+                </div>
+                <!-- Carry-over section -->
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-4">
+                  <label class="flex items-center gap-2.5 cursor-pointer mb-3 group">
+                    <div class="relative">
+                      <input type="checkbox" v-model="editInvoiceForm.hasCarryOver" class="sr-only peer" />
+                      <div class="w-4 h-4 rounded border border-slate-400 bg-slate-200 dark:bg-slate-800 peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-colors"></div>
+                      <i data-lucide="check" class="w-2.5 h-2.5 text-white absolute top-0.5 left-0.5 opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Incluir encargos de atraso (carry-over)</span>
+                  </label>
+                  <div v-if="editInvoiceForm.hasCarryOver" class="space-y-3 pl-1">
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Multa (R$)</label>
+                        <input type="text" v-model="editInvoiceForm.carryOverLateFee" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="0,00" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Juros (R$)</label>
+                        <input type="text" v-model="editInvoiceForm.carryOverInterest" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="0,00" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-slate-500 mb-1">Período de origem (YYYY-MM ou "one-time")</label>
+                      <input type="text" v-model="editInvoiceForm.carryOverFromPeriod" class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="2026-03" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                <button @click="showEditInvoiceModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Cancelar</button>
+                <button @click="saveEditInvoice" class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow">Salvar Fatura</button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Modal: Invoice Detail / Payment Info -->
+        <transition name="fade">
+          <div v-if="showInvoiceDetailModal && detailInvoice" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="closeInvoiceDetailModal"></div>
+            <div class="bg-slate-50 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative z-10 py-2">
+              <div class="p-6 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="receipt" class="w-5 h-5 text-emerald-500"></i>
+                  Detalhe do Pagamento
+                </h3>
+                <button @click="closeInvoiceDetailModal" class="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Período</p>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ formatPeriod(detailInvoice.period) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Data de Pagamento</p>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ formatDate(detailInvoice.payment?.date) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Total da Fatura</p>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ formatCurrency(getInvoiceTotal(detailInvoice)) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Valor Pago</p>
+                    <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(detailInvoice.payment?.paidAmount) }}</p>
+                  </div>
+                </div>
+                <div v-if="detailInvoice.payment?.notes" class="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                  <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Observações</p>
+                  <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{{ detailInvoice.payment.notes }}</p>
+                </div>
+                <div v-if="detailInvoice.payment?.receiptBase64" class="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <i data-lucide="paperclip" class="w-4 h-4 text-emerald-500 shrink-0"></i>
+                  <span class="text-sm text-emerald-700 dark:text-emerald-400 truncate flex-1 font-medium">{{ detailInvoice.payment.receiptName }}</span>
+                  <button @click="downloadReceipt(detailInvoice)" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shrink-0 font-medium">Baixar</button>
+                </div>
+              </div>
+              <div class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+                <button @click="undoMarkPaid" class="text-sm text-red-500 hover:text-red-400 transition-colors flex items-center gap-1.5">
+                  <i data-lucide="undo-2" class="w-4 h-4"></i> Desfazer pagamento
+                </button>
+                <button @click="closeInvoiceDetailModal" class="px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
       </template>
     </div>
 
@@ -3140,7 +3549,6 @@
             newService: {
               name: "",
               type: "one-time",
-              paid: false,
               isActive: true,
             },
 
@@ -3160,7 +3568,6 @@
               hourlyRate: 0,
               profitMargin: 0,
               taxMargin: 0,
-              paid: false,
               isActive: true,
             },
 
@@ -3201,8 +3608,48 @@
             deleteError: false,
 
             // UI states
-            currentView: "dashboard", // 'dashboard' or 'formulas'
+            currentView: "dashboard",
             hoveredServiceCostsId: null,
+
+            // Invoice / Billing
+            selectedInvoiceServiceId: null,
+            showBillingSettingsModal: false,
+            billingSettingsForm: {
+              enabled: false,
+              startDate: "",
+              dayOfMonth: 1,
+              dueDays: 7,
+              lateFeeType: 'percent',
+              lateFeeValue: 2.0,
+              dailyInterestRate: 0.033,
+            },
+            showMarkPaidModal: false,
+            markPaidInvoiceId: null,
+            markPaidForm: {
+              date: "",
+              paidAmount: "",
+              notes: "",
+              receiptBase64: null,
+              receiptName: null,
+              receiptMimeType: null,
+              showProportional: false,
+              proportionalDays: null,
+              proportionalTotal: null,
+            },
+            showEditInvoiceModal: false,
+            editInvoiceId: null,
+            editInvoiceServiceId: null,
+            editInvoiceForm: {
+              issueDate: "",
+              dueDate: "",
+              baseAmount: "",
+              hasCarryOver: false,
+              carryOverLateFee: "",
+              carryOverInterest: "",
+              carryOverFromPeriod: "",
+            },
+            showInvoiceDetailModal: false,
+            detailInvoice: null,
           };
         },
         computed: {
@@ -3214,14 +3661,16 @@
             if (this.deleteEntityType === "service") return "Serviço";
             if (this.deleteEntityType === "item") return "Item";
             if (this.deleteEntityType === "expense") return "Fechamento";
+            if (this.deleteEntityType === "invoice") return "Fatura";
             return "";
           },
           isDeleteConfirmed() {
             if (!this.deleteTargetEntity) return false;
-            // Items and expenses do not require string confirmation
+            // Items, expenses, and invoices do not require string confirmation
             if (
               this.deleteEntityType === "item" ||
-              this.deleteEntityType === "expense"
+              this.deleteEntityType === "expense" ||
+              this.deleteEntityType === "invoice"
             )
               return true;
             return (
@@ -3233,17 +3682,18 @@
             return this.clients.length;
           },
           dashboardAReceber() {
-            return this.clients.reduce((total, client) => {
-              return (
-                total +
-                client.services.reduce((srvTotal, service) => {
-                  if (service.type === "one-time" && !service.paid) {
-                    return srvTotal + this.calculateFinalPrice(service);
+            let total = 0;
+            this.clients.forEach(client => {
+              client.services.forEach(service => {
+                if (!service.invoices) return;
+                service.invoices.forEach(inv => {
+                  if (inv.status === 'pending' || inv.status === 'overdue') {
+                    total += this.getInvoiceTotal(inv);
                   }
-                  return srvTotal;
-                }, 0)
-              );
-            }, 0);
+                });
+              });
+            });
+            return total;
           },
           dashboardReceitaRecorrente() {
             return this.clients.reduce((total, client) => {
@@ -3309,6 +3759,12 @@
               return monthsOrder[monthB] - monthsOrder[monthA];
             });
           },
+          selectedInvoiceService() {
+            if (!this.selectedClientId || !this.selectedInvoiceServiceId) return null;
+            const client = this.clients.find(c => c.id === this.selectedClientId);
+            if (!client) return null;
+            return client.services.find(s => s.id === this.selectedInvoiceServiceId) || null;
+          },
         },
         watch: {
           currentView(newVal) {
@@ -3343,6 +3799,9 @@
         methods: {
           switchView(view) {
             this.currentView = view;
+            if (view !== 'invoices') {
+              this.selectedInvoiceServiceId = null;
+            }
             if (view === "formulas" || view === "expenses") {
               this.selectedClientId = null;
             }
@@ -3396,12 +3855,16 @@
           },
 
           getClientAReceber(client) {
-            return client.services.reduce((total, service) => {
-              if (service.type === "one-time" && !service.paid) {
-                return total + this.calculateFinalPrice(service);
-              }
-              return total;
-            }, 0);
+            let total = 0;
+            client.services.forEach(service => {
+              if (!service.invoices) return;
+              service.invoices.forEach(inv => {
+                if (inv.status === 'pending' || inv.status === 'overdue') {
+                  total += this.getInvoiceTotal(inv);
+                }
+              });
+            });
+            return total;
           },
 
           // -- Core Math --
@@ -3580,16 +4043,34 @@
           applyRoute() {
             const hash = window.location.hash.replace('#', '') || 'dashboard';
             if (hash.startsWith('dashboard/')) {
-              const clientId = hash.split('/')[1];
-              this.currentView = 'dashboard';
-              const exists = this.clients.find(c => c.id === clientId);
-              this.selectedClientId = exists ? clientId : null;
+              const parts = hash.split('/');
+              const clientId = parts[1];
+              const clientExists = this.clients.find(c => c.id === clientId);
+              if (parts[2] === 'invoices' && parts[3] && clientExists) {
+                const serviceId = parts[3];
+                const serviceExists = clientExists.services.find(s => s.id === serviceId);
+                if (serviceExists) {
+                  this.currentView = 'invoices';
+                  this.selectedClientId = clientId;
+                  this.selectedInvoiceServiceId = serviceId;
+                } else {
+                  this.currentView = 'dashboard';
+                  this.selectedClientId = clientId;
+                  this.selectedInvoiceServiceId = null;
+                }
+              } else {
+                this.currentView = 'dashboard';
+                this.selectedClientId = clientExists ? clientId : null;
+                this.selectedInvoiceServiceId = null;
+              }
             } else if (['expenses', 'settings', 'formulas', 'dashboard'].includes(hash)) {
               this.currentView = hash;
               this.selectedClientId = null;
+              this.selectedInvoiceServiceId = null;
             } else {
               this.currentView = 'dashboard';
               this.selectedClientId = null;
+              this.selectedInvoiceServiceId = null;
             }
             nextTick(() => { this.refreshIcons(); });
           },
@@ -3613,7 +4094,6 @@
             this.newService = {
               name: "",
               type: "one-time",
-              paid: false,
               isActive: true,
             };
             this.showNewServiceModal = true;
@@ -3624,10 +4104,6 @@
               id: this.generateId(),
               name: this.newService.name,
               type: this.newService.type,
-              paid:
-                this.newService.type === "one-time"
-                  ? this.newService.paid
-                  : false,
               isActive:
                 this.newService.type === "recurring"
                   ? this.newService.isActive
@@ -3637,6 +4113,8 @@
               hourlyRate: this.globalParams.hourlyRate,
               isCollapsed: false,
               items: [],
+              billing: { enabled: false, startDate: "", dayOfMonth: 1, dueDays: 7, lateFeeType: 'percent', lateFeeValue: 2.0, dailyInterestRate: 0.033 },
+              invoices: [],
             });
             this.showNewServiceModal = false;
             this.refreshIcons();
@@ -3665,6 +4143,9 @@
               duplicatedService.id = this.generateId();
               duplicatedService.name = this.duplicateServiceName;
               duplicatedService.isCollapsed = false;
+              // Reset billing and invoices — they are unique per service instance
+              duplicatedService.billing = { enabled: false, startDate: "", dayOfMonth: 1, dueDays: 7, lateFeeType: 'percent', lateFeeValue: 2.0, dailyInterestRate: 0.033 };
+              duplicatedService.invoices = [];
 
               // Generate new IDs for items
               if (duplicatedService.items) {
@@ -3808,6 +4289,14 @@
               this.expensesHistory = this.expensesHistory.filter(
                 (e) => e.id !== this.deleteTargetEntity.id,
               );
+            } else if (this.deleteEntityType === "invoice") {
+              const client = this.clients.find(c => c.id === this.selectedClientId);
+              if (client) {
+                const service = client.services.find(s => s.id === this.deleteParentEntityId);
+                if (service) {
+                  service.invoices = service.invoices.filter(i => i.id !== this.deleteTargetEntity.id);
+                }
+              }
             }
 
             this.closeDeleteModal();
@@ -3975,10 +4464,6 @@
             if (service) {
               service.name = this.editServiceData.name;
               service.type = this.editServiceData.type;
-              service.paid =
-                this.editServiceData.type === "one-time"
-                  ? this.editServiceData.paid
-                  : false;
               service.isActive =
                 this.editServiceData.type === "recurring"
                   ? this.editServiceData.isActive
@@ -4041,6 +4526,340 @@
             }
             this.showEditBufferModal = false;
             this.refreshIcons();
+          },
+
+          saveEditBuffer() {
+            if (!this.editItemServiceId || !this.selectedClient) return;
+            const service = this.selectedClient.services.find(
+              (s) => s.id === this.editItemServiceId,
+            );
+            if (service) {
+              const item = service.items.find(
+                (i) => i.id === this.editBufferData.id,
+              );
+              if (item) {
+                item.value = Number(this.editBufferData.value || 0);
+              }
+            }
+            this.showEditBufferModal = false;
+            this.refreshIcons();
+          },
+
+          // -- Invoice / Billing --
+          formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+          },
+          formatPeriod(period) {
+            if (!period) return '-';
+            if (period === 'one-time') return 'Pagamento Único';
+            const [y, m] = period.split('-');
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            return `${months[parseInt(m, 10) - 1]} ${y}`;
+          },
+          addDays(dateStr, days) {
+            const d = new Date(dateStr + 'T00:00:00');
+            d.setDate(d.getDate() + Number(days));
+            return d.toISOString().substring(0, 10);
+          },
+          daysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+          },
+          getInvoiceTotal(invoice) {
+            const carryFee = invoice.carryOver
+              ? (Number(invoice.carryOver.lateFee || 0) + Number(invoice.carryOver.interest || 0))
+              : 0;
+            return Number(invoice.baseAmount || 0) + carryFee;
+          },
+          getServiceInvoiceSummary(service) {
+            if (!service || !service.invoices) return { paid: 0, pending: 0, overdue: 0, totalPaid: 0, totalPending: 0, totalOverdue: 0 };
+            const result = { paid: 0, pending: 0, overdue: 0, totalPaid: 0, totalPending: 0, totalOverdue: 0 };
+            service.invoices.forEach(inv => {
+              const total = this.getInvoiceTotal(inv);
+              if (inv.status === 'paid') {
+                result.paid++;
+                result.totalPaid += inv.payment ? Number(inv.payment.paidAmount || 0) : total;
+              } else if (inv.status === 'pending') {
+                result.pending++;
+                result.totalPending += total;
+              } else if (inv.status === 'overdue') {
+                result.overdue++;
+                result.totalOverdue += total;
+              }
+            });
+            return result;
+          },
+          computeAllInvoices() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().substring(0, 10);
+            this.clients.forEach(client => {
+              client.services.forEach(service => {
+                if (!service.billing || !service.billing.enabled || !service.billing.startDate) return;
+                if (!service.invoices) service.invoices = [];
+                const billing = service.billing;
+
+                if (service.type === 'one-time') {
+                  const existing = service.invoices.find(inv => inv.period === 'one-time');
+                  if (!existing) {
+                    const dueDate = this.addDays(billing.startDate, billing.dueDays || 7);
+                    service.invoices.push({
+                      id: this.generateId(),
+                      period: 'one-time',
+                      issueDate: billing.startDate,
+                      dueDate: dueDate,
+                      baseAmount: this.calculateFinalPrice(service),
+                      status: 'pending',
+                    });
+                  }
+                } else if (service.type === 'recurring') {
+                  const startDate = new Date(billing.startDate + 'T00:00:00');
+                  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                  let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                  while (cursor <= nextMonth) {
+                    const year = cursor.getFullYear();
+                    const month = (cursor.getMonth() + 1).toString().padStart(2, '0');
+                    const period = `${year}-${month}`;
+                    const existing = service.invoices.find(inv => inv.period === period);
+                    if (!existing) {
+                      const day = Math.min(billing.dayOfMonth || 1, this.daysInMonth(year, cursor.getMonth() + 1));
+                      const issueDate = `${year}-${month}-${day.toString().padStart(2, '0')}`;
+                      const dueDate = this.addDays(issueDate, billing.dueDays || 7);
+                      service.invoices.push({
+                        id: this.generateId(),
+                        period: period,
+                        issueDate: issueDate,
+                        dueDate: dueDate,
+                        baseAmount: this.calculateFinalPrice(service),
+                        status: 'pending',
+                      });
+                    }
+                    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+                  }
+                }
+
+                // Sort ascending by period
+                const periodKey = inv => inv.period === 'one-time' ? '0000-00' : inv.period;
+                service.invoices.sort((a, b) => periodKey(a).localeCompare(periodKey(b)));
+
+                // Recompute status and carry-over
+                service.invoices.forEach((inv, idx) => {
+                  if (inv.payment) {
+                    inv.status = 'paid';
+                  } else if (inv.dueDate < todayStr) {
+                    inv.status = 'overdue';
+                  } else {
+                    inv.status = 'pending';
+                  }
+                  // Inject carry-over into next invoice when this one is overdue
+                  if (inv.status === 'overdue' && idx < service.invoices.length - 1) {
+                    const nextInv = service.invoices[idx + 1];
+                    if (!nextInv.carryOver) {
+                      const dueDateObj = new Date(inv.dueDate + 'T00:00:00');
+                      const daysLate = Math.max(0, Math.floor((today - dueDateObj) / (1000 * 60 * 60 * 24)));
+                      let lateFeeAmt = 0;
+                      if (billing.lateFeeType === 'percent') {
+                        lateFeeAmt = (Number(billing.lateFeeValue || 0) / 100) * Number(inv.baseAmount || 0);
+                      } else {
+                        lateFeeAmt = Number(billing.lateFeeValue || 0);
+                      }
+                      const interest = (Number(billing.dailyInterestRate || 0) / 100) * daysLate * Number(inv.baseAmount || 0);
+                      nextInv.carryOver = {
+                        lateFee: lateFeeAmt,
+                        interest: interest,
+                        fromPeriod: inv.period,
+                        description: `Encargos de ${this.formatPeriod(inv.period)}: multa ${this.formatCurrency(lateFeeAmt)} + juros ${this.formatCurrency(interest)} (${daysLate} dia(s) de atraso)`,
+                      };
+                    }
+                  }
+                });
+              });
+            });
+          },
+          openInvoiceView(serviceId) {
+            if (!this.selectedClientId) return;
+            this.selectedInvoiceServiceId = serviceId;
+            this.currentView = 'invoices';
+            const newHash = `#dashboard/${this.selectedClientId}/invoices/${serviceId}`;
+            if (window.location.hash !== newHash) window.location.hash = newHash;
+            this.computeAllInvoices();
+            nextTick(() => { this.refreshIcons(); });
+          },
+          openBillingSettingsModal() {
+            const service = this.selectedInvoiceService;
+            if (!service) return;
+            const b = service.billing || {};
+            this.billingSettingsForm = {
+              enabled: !!b.enabled,
+              startDate: b.startDate || '',
+              dayOfMonth: b.dayOfMonth || 1,
+              dueDays: b.dueDays || 7,
+              lateFeeType: b.lateFeeType || 'percent',
+              lateFeeValue: b.lateFeeValue !== undefined ? b.lateFeeValue : 2.0,
+              dailyInterestRate: b.dailyInterestRate !== undefined ? b.dailyInterestRate : 0.033,
+            };
+            this.showBillingSettingsModal = true;
+          },
+          saveBillingSettings() {
+            const service = this.selectedInvoiceService;
+            if (!service) return;
+            if (this.billingSettingsForm.enabled && !this.billingSettingsForm.startDate) return;
+            service.billing = {
+              enabled: this.billingSettingsForm.enabled,
+              startDate: this.billingSettingsForm.startDate,
+              dayOfMonth: Number(this.billingSettingsForm.dayOfMonth) || 1,
+              dueDays: Number(this.billingSettingsForm.dueDays) || 7,
+              lateFeeType: this.billingSettingsForm.lateFeeType,
+              lateFeeValue: Number(this.billingSettingsForm.lateFeeValue) || 0,
+              dailyInterestRate: Number(this.billingSettingsForm.dailyInterestRate) || 0,
+            };
+            this.computeAllInvoices();
+            this.showBillingSettingsModal = false;
+            this.saveData();
+            nextTick(() => { this.refreshIcons(); });
+          },
+          openMarkPaidModal(invoiceId) {
+            const service = this.selectedInvoiceService;
+            if (!service) return;
+            const inv = service.invoices.find(i => i.id === invoiceId);
+            if (!inv) return;
+            this.markPaidInvoiceId = invoiceId;
+            const today = new Date().toISOString().substring(0, 10);
+            const defaultAmount = this.getInvoiceTotal(inv);
+            this.markPaidForm = {
+              date: today,
+              paidAmount: defaultAmount.toFixed(2).replace('.', ','),
+              notes: '',
+              receiptBase64: null,
+              receiptName: null,
+              receiptMimeType: null,
+              showProportional: false,
+              proportionalDays: null,
+              proportionalTotal: null,
+            };
+            this.showMarkPaidModal = true;
+          },
+          recalcProportionalAmount() {
+            const service = this.selectedInvoiceService;
+            if (!service) return;
+            const inv = service.invoices.find(i => i.id === this.markPaidInvoiceId);
+            if (!inv) return;
+            const days = Number(this.markPaidForm.proportionalDays || 0);
+            const total = Number(this.markPaidForm.proportionalTotal || 0);
+            if (days > 0 && total > 0) {
+              const proportional = (Number(inv.baseAmount || 0) / total) * days;
+              this.markPaidForm.paidAmount = proportional.toFixed(2).replace('.', ',');
+            }
+          },
+          async handleReceiptUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              this.markPaidForm.receiptBase64 = e.target.result.split(',')[1];
+              this.markPaidForm.receiptName = file.name;
+              this.markPaidForm.receiptMimeType = file.type;
+            };
+            reader.readAsDataURL(file);
+          },
+          saveMarkPaid() {
+            const service = this.selectedInvoiceService;
+            if (!service) return;
+            const inv = service.invoices.find(i => i.id === this.markPaidInvoiceId);
+            if (!inv) return;
+            const paidAmount = this.parseBrCurrency(this.markPaidForm.paidAmount);
+            inv.payment = {
+              date: this.markPaidForm.date,
+              paidAmount: paidAmount,
+              notes: this.markPaidForm.notes,
+              receiptBase64: this.markPaidForm.receiptBase64 || null,
+              receiptName: this.markPaidForm.receiptName || null,
+              receiptMimeType: this.markPaidForm.receiptMimeType || null,
+            };
+            inv.status = 'paid';
+            this.computeAllInvoices();
+            this.showMarkPaidModal = false;
+            this.saveData();
+            nextTick(() => { this.refreshIcons(); });
+          },
+          openInvoiceDetailModal(invoice) {
+            this.detailInvoice = invoice;
+            this.showInvoiceDetailModal = true;
+          },
+          closeInvoiceDetailModal() {
+            this.showInvoiceDetailModal = false;
+            setTimeout(() => { this.detailInvoice = null; }, 300);
+          },
+          undoMarkPaid() {
+            const service = this.selectedInvoiceService;
+            if (!service || !this.detailInvoice) return;
+            const inv = service.invoices.find(i => i.id === this.detailInvoice.id);
+            if (!inv) return;
+            delete inv.payment;
+            this.computeAllInvoices();
+            this.closeInvoiceDetailModal();
+            this.saveData();
+            nextTick(() => { this.refreshIcons(); });
+          },
+          downloadReceipt(invoice) {
+            if (!invoice.payment || !invoice.payment.receiptBase64) return;
+            const a = document.createElement('a');
+            a.href = `data:${invoice.payment.receiptMimeType};base64,${invoice.payment.receiptBase64}`;
+            a.download = invoice.payment.receiptName || 'nota-fiscal';
+            a.click();
+          },
+          openEditInvoiceModal(invoice) {
+            this.editInvoiceId = invoice.id;
+            this.editInvoiceServiceId = this.selectedInvoiceServiceId;
+            this.editInvoiceForm = {
+              issueDate: invoice.issueDate || '',
+              dueDate: invoice.dueDate || '',
+              baseAmount: Number(invoice.baseAmount || 0).toFixed(2).replace('.', ','),
+              hasCarryOver: !!invoice.carryOver,
+              carryOverLateFee: invoice.carryOver ? String(Number(invoice.carryOver.lateFee || 0).toFixed(2)).replace('.', ',') : '',
+              carryOverInterest: invoice.carryOver ? String(Number(invoice.carryOver.interest || 0).toFixed(2)).replace('.', ',') : '',
+              carryOverFromPeriod: invoice.carryOver ? invoice.carryOver.fromPeriod : '',
+            };
+            this.showEditInvoiceModal = true;
+          },
+          saveEditInvoice() {
+            if (!this.selectedClientId) return;
+            const client = this.clients.find(c => c.id === this.selectedClientId);
+            if (!client) return;
+            const service = client.services.find(s => s.id === this.editInvoiceServiceId);
+            if (!service) return;
+            const inv = service.invoices.find(i => i.id === this.editInvoiceId);
+            if (!inv) return;
+            inv.issueDate = this.editInvoiceForm.issueDate;
+            inv.dueDate = this.editInvoiceForm.dueDate;
+            inv.baseAmount = this.parseBrCurrency(this.editInvoiceForm.baseAmount);
+            if (this.editInvoiceForm.hasCarryOver) {
+              const lateFee = this.parseBrCurrency(this.editInvoiceForm.carryOverLateFee);
+              const interest = this.parseBrCurrency(this.editInvoiceForm.carryOverInterest);
+              inv.carryOver = {
+                lateFee,
+                interest,
+                fromPeriod: this.editInvoiceForm.carryOverFromPeriod,
+                description: `Encargos de ${this.formatPeriod(this.editInvoiceForm.carryOverFromPeriod)}: multa ${this.formatCurrency(lateFee)} + juros ${this.formatCurrency(interest)}`,
+              };
+            } else {
+              delete inv.carryOver;
+            }
+            // Recompute status for this invoice only
+            const todayStr = new Date().toISOString().substring(0, 10);
+            if (!inv.payment) {
+              inv.status = inv.dueDate < todayStr ? 'overdue' : 'pending';
+            }
+            this.showEditInvoiceModal = false;
+            this.saveData();
+            nextTick(() => { this.refreshIcons(); });
+          },
+          confirmDeleteInvoice(invoice) {
+            this.deleteEntityType = 'invoice';
+            this.deleteTargetEntity = invoice;
+            this.deleteParentEntityId = this.selectedInvoiceServiceId;
+            this.openDeleteModal();
           },
 
           // -- Auth --
@@ -4117,10 +4936,43 @@
                         if (s.isCollapsed === undefined) s.isCollapsed = false;
                         if (s.type === "recurring" && s.isActive === undefined)
                           s.isActive = true;
+                        // MIGRATION: billing/invoices defaults
+                        if (!s.billing) {
+                          s.billing = { enabled: false, startDate: "", dayOfMonth: 1, dueDays: 7, lateFeeType: 'percent', lateFeeValue: 2.0, dailyInterestRate: 0.033 };
+                        }
+                        if (!s.invoices) {
+                          s.invoices = [];
+                        }
+                        // MIGRATION: paid field → invoice
+                        if (s.paid === true && s.invoices.length === 0 && !s.billing.enabled) {
+                          const today = new Date().toISOString().substring(0, 10);
+                          const fp = this.calculateFinalPrice(s);
+                          s.billing.enabled = true;
+                          s.billing.startDate = today;
+                          s.invoices.push({
+                            id: this.generateId(),
+                            period: 'one-time',
+                            issueDate: today,
+                            dueDate: today,
+                            baseAmount: fp,
+                            status: 'paid',
+                            payment: {
+                              date: today,
+                              paidAmount: fp,
+                              notes: 'Migrado do campo "pago"',
+                              receiptBase64: null,
+                              receiptName: null,
+                              receiptMimeType: null,
+                            }
+                          });
+                        }
+                        delete s.paid;
                       });
                     }
                   });
                   this.clients = parsed.clients;
+                  // Compute invoice statuses after loading and migration
+                  this.computeAllInvoices();
                 }
                 if (parsed.expensesHistory) {
                   this.expensesHistory = parsed.expensesHistory;
@@ -4329,6 +5181,18 @@
             if (val) this.refreshIcons();
           },
           showEditItemModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showBillingSettingsModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showMarkPaidModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showEditInvoiceModal(val) {
+            if (val) this.refreshIcons();
+          },
+          showInvoiceDetailModal(val) {
             if (val) this.refreshIcons();
           },
           selectedClientId() {
