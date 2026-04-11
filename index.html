@@ -393,7 +393,7 @@
               <div>
                 <button
                   @click="openNewServiceModal"
-                  class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20 focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                  class="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20 focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-900"
                 >
                   <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Serviço
                 </button>
@@ -515,7 +515,7 @@
                   </p>
                 </div>
 
-                <!-- Receita Avulsa -->
+                <!-- A Receber -->
                 <div
                   class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col relative overflow-hidden"
                 >
@@ -529,7 +529,7 @@
                       class="text-slate-700 dark:text-slate-300 font-semibold"
                       title="Soma de serviços de pagamento único ainda não pagos"
                     >
-                      Receita Avulsa
+                      A Receber
                     </h3>
                   </div>
                   <p
@@ -595,7 +595,7 @@
                         </div>
                         <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
                         <div class="flex flex-col items-end min-w-[120px]">
-                          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Avulso</span>
+                          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">A Receber</span>
                           <span class="font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors min-w-[100px] text-right block" title="Serviços pontuais pendentes">
                             {{ formatCurrency(getClientAReceber(client)) }}
                           </span>
@@ -726,7 +726,7 @@
                           :class="['text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold ml-1', 
                         getServiceInvoiceSummary(service).overdue > 0 ? 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' : getServiceInvoiceSummary(service).pending > 0 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20']"
                         >
-                          {{ getServiceInvoiceSummary(service).overdue > 0 ? (getServiceInvoiceSummary(service).overdue + ' em atraso') : getServiceInvoiceSummary(service).pending > 0 ? (getServiceInvoiceSummary(service).pending + ' pendente(s)') : 'Em dia' }}
+                          {{ getServiceInvoiceSummary(service).overdue > 0 ? (getServiceInvoiceSummary(service).overdue + ' em atraso') : getServiceInvoiceSummary(service).pending > 0 ? (getServiceInvoiceSummary(service).pending + ' pendente(s)') : (service.type === 'one-time' ? 'Pago' : 'Em dia') }}
                         </span>
                         <span
                           v-if="service.type === 'recurring'"
@@ -1860,7 +1860,7 @@
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-                      <template v-for="inv in selectedInvoiceService.invoices" :key="inv.id">
+                      <template v-for="inv in selectedInvoiceService.invoices.slice().reverse()" :key="inv.id">
                         <!-- Main invoice row -->
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                           <td class="px-6 py-4 font-medium">{{ formatPeriod(inv.period) }}</td>
@@ -4615,16 +4615,18 @@
                   }
                 } else if (service.type === 'recurring') {
                   const startDate = new Date(billing.startDate + 'T00:00:00');
-                  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
                   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-                  while (cursor <= nextMonth) {
+                  while (true) {
                     const year = cursor.getFullYear();
-                    const month = (cursor.getMonth() + 1).toString().padStart(2, '0');
+                    const monthNum = cursor.getMonth() + 1;
+                    const month = monthNum.toString().padStart(2, '0');
+                    const day = Math.min(billing.dayOfMonth || 1, this.daysInMonth(year, monthNum));
+                    const issueDate = `${year}-${month}-${day.toString().padStart(2, '0')}`;
+                    // Only create invoices whose issue date has already been reached
+                    if (issueDate > todayStr) break;
                     const period = `${year}-${month}`;
                     const existing = service.invoices.find(inv => inv.period === period);
                     if (!existing) {
-                      const day = Math.min(billing.dayOfMonth || 1, this.daysInMonth(year, cursor.getMonth() + 1));
-                      const issueDate = `${year}-${month}-${day.toString().padStart(2, '0')}`;
                       const dueDate = this.addDays(issueDate, billing.dueDays || 7);
                       service.invoices.push({
                         id: this.generateId(),
@@ -4635,7 +4637,7 @@
                         status: 'pending',
                       });
                     }
-                    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+                    cursor = new Date(year, cursor.getMonth() + 1, 1);
                   }
                 }
 
