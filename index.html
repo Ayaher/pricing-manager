@@ -3487,10 +3487,10 @@
                   <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Observações</p>
                   <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{{ detailInvoice.payment.notes }}</p>
                 </div>
-                <div v-if="detailInvoice.payment?.receiptBase64" class="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <div v-if="detailInvoice.payment?.receiptName" class="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                   <i data-lucide="paperclip" class="w-4 h-4 text-emerald-500 shrink-0"></i>
                   <span class="text-sm text-emerald-700 dark:text-emerald-400 truncate flex-1 font-medium">{{ detailInvoice.payment.receiptName }}</span>
-                  <button @click="downloadReceipt(detailInvoice)" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shrink-0 font-medium">Baixar</button>
+                  <button @click="downloadReceipt(detailInvoice)" :disabled="receiptDownloading" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0 font-medium">{{ receiptDownloading ? 'Baixando...' : 'Baixar' }}</button>
                 </div>
               </div>
               <div class="p-6 border-t border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
@@ -3519,6 +3519,7 @@
         doc,
         setDoc,
         getDoc,
+        deleteDoc,
       } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -3648,6 +3649,7 @@
             },
             showMarkPaidModal: false,
             markPaidInvoiceId: null,
+            receiptDownloading: false,
             markPaidForm: {
               date: "",
               paidAmount: "",
@@ -4828,17 +4830,24 @@
             };
             reader.readAsDataURL(file);
           },
-          saveMarkPaid() {
+          async saveMarkPaid() {
             const service = this.selectedInvoiceService;
             if (!service) return;
             const inv = service.invoices.find(i => i.id === this.markPaidInvoiceId);
             if (!inv) return;
             const paidAmount = this.parseBrCurrency(this.markPaidForm.paidAmount);
+            // Save receipt blob to its own subcollection document (avoids 1MB limit on main doc)
+            if (this.markPaidForm.receiptBase64 && this.userUid) {
+              await setDoc(doc(db, "users", this.userUid, "receipts", inv.id), {
+                base64: this.markPaidForm.receiptBase64,
+                mimeType: this.markPaidForm.receiptMimeType || '',
+                name: this.markPaidForm.receiptName || 'nota-fiscal',
+              });
+            }
             inv.payment = {
               date: this.markPaidForm.date,
               paidAmount: paidAmount,
               notes: this.markPaidForm.notes,
-              receiptBase64: this.markPaidForm.receiptBase64 || null,
               receiptName: this.markPaidForm.receiptName || null,
               receiptMimeType: this.markPaidForm.receiptMimeType || null,
             };
@@ -4856,23 +4865,45 @@
             this.showInvoiceDetailModal = false;
             setTimeout(() => { this.detailInvoice = null; }, 300);
           },
-          undoMarkPaid() {
+          async undoMarkPaid() {
             const service = this.selectedInvoiceService;
             if (!service || !this.detailInvoice) return;
             const inv = service.invoices.find(i => i.id === this.detailInvoice.id);
             if (!inv) return;
+            // Delete receipt from subcollection if one was attached
+            if (inv.payment?.receiptName && this.userUid) {
+              try {
+                await deleteDoc(doc(db, "users", this.userUid, "receipts", inv.id));
+              } catch (e) {
+                console.error('Erro ao deletar recibo da subcoleção', e);
+              }
+            }
             delete inv.payment;
             this.computeAllInvoices();
             this.closeInvoiceDetailModal();
             this.saveData();
             nextTick(() => { this.refreshIcons(); });
           },
-          downloadReceipt(invoice) {
-            if (!invoice.payment || !invoice.payment.receiptBase64) return;
-            const a = document.createElement('a');
-            a.href = `data:${invoice.payment.receiptMimeType};base64,${invoice.payment.receiptBase64}`;
-            a.download = invoice.payment.receiptName || 'nota-fiscal';
-            a.click();
+          async downloadReceipt(invoice) {
+            if (!invoice.payment || !invoice.payment.receiptName) return;
+            this.receiptDownloading = true;
+            try {
+              const snap = await getDoc(doc(db, "users", this.userUid, "receipts", invoice.id));
+              if (!snap.exists()) {
+                alert('Recibo não encontrado no servidor.');
+                return;
+              }
+              const { base64, mimeType, name } = snap.data();
+              const a = document.createElement('a');
+              a.href = `data:${mimeType};base64,${base64}`;
+              a.download = name || 'nota-fiscal';
+              a.click();
+            } catch (e) {
+              console.error('Erro ao baixar recibo', e);
+              alert('Erro ao baixar o recibo.');
+            } finally {
+              this.receiptDownloading = false;
+            }
           },
           openEditInvoiceModal(invoice) {
             this.editInvoiceId = invoice.id;
@@ -5048,6 +5079,23 @@
                       (s.invoices || []).forEach(inv => {
                         if (inv.ignoredInClosing === undefined) {
                           inv.ignoredInClosing = true;
+                          migrationNeedsSave = true;
+                        }
+                      });
+                    });
+                  });
+                  // MIGRATION: Move receiptBase64 out of main document into receipts subcollection
+                  this.clients.forEach(c => {
+                    (c.services || []).forEach(s => {
+                      (s.invoices || []).forEach(inv => {
+                        if (inv.payment && inv.payment.receiptBase64) {
+                          // Write to subcollection (fire-and-forget; main doc cleaned by saveData below)
+                          setDoc(doc(db, "users", this.userUid, "receipts", inv.id), {
+                            base64: inv.payment.receiptBase64,
+                            mimeType: inv.payment.receiptMimeType || '',
+                            name: inv.payment.receiptName || 'nota-fiscal',
+                          }).catch(e => console.error('Erro ao migrar recibo', inv.id, e));
+                          delete inv.payment.receiptBase64;
                           migrationNeedsSave = true;
                         }
                       });
