@@ -1865,7 +1865,7 @@
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors" :class="{ 'opacity-50': inv.ignoredInClosing && !inv.fechamentoId }">
                           <td class="px-6 py-4 font-medium">
                             {{ formatPeriod(inv.period) }}
-                            <span v-if="inv.fechamentoId" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 font-semibold uppercase tracking-wide align-middle">Atrelada</span>
+                            <span v-if="inv.fechamentoId" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 font-semibold uppercase tracking-wide align-middle">Contabilizada</span>
                             <span v-else-if="inv.ignoredInClosing" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-400/10 text-slate-500 dark:text-slate-500 border border-slate-400/20 font-semibold uppercase tracking-wide align-middle">Ignorada</span>
                           </td>
                           <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ formatDate(inv.issueDate) }}</td>
@@ -4322,9 +4322,20 @@
                 }
               }
             } else if (this.deleteEntityType === "expense") {
+              const deletedId = this.deleteTargetEntity.id;
               this.expensesHistory = this.expensesHistory.filter(
-                (e) => e.id !== this.deleteTargetEntity.id,
+                (e) => e.id !== deletedId,
               );
+              // Unlink any invoices that were tied to this fechamento
+              this.clients.forEach(c => {
+                (c.services || []).forEach(s => {
+                  (s.invoices || []).forEach(inv => {
+                    if (inv.fechamentoId === deletedId) {
+                      delete inv.fechamentoId;
+                    }
+                  });
+                });
+              });
             } else if (this.deleteEntityType === "invoice") {
               const client = this.clients.find(c => c.id === this.selectedClientId);
               if (client) {
