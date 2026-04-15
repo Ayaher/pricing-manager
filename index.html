@@ -1862,8 +1862,12 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
                       <template v-for="inv in selectedInvoiceService.invoices.slice().reverse()" :key="inv.id">
                         <!-- Main invoice row -->
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                          <td class="px-6 py-4 font-medium">{{ formatPeriod(inv.period) }}</td>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors" :class="{ 'opacity-50': inv.ignoredInClosing && !inv.fechamentoId }">
+                          <td class="px-6 py-4 font-medium">
+                            {{ formatPeriod(inv.period) }}
+                            <span v-if="inv.fechamentoId" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 font-semibold uppercase tracking-wide align-middle">Atrelada</span>
+                            <span v-else-if="inv.ignoredInClosing" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-400/10 text-slate-500 dark:text-slate-500 border border-slate-400/20 font-semibold uppercase tracking-wide align-middle">Ignorada</span>
+                          </td>
                           <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ formatDate(inv.issueDate) }}</td>
                           <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ formatDate(inv.dueDate) }}</td>
                           <td class="px-6 py-4 text-right font-mono">{{ formatCurrency(inv.baseAmount) }}</td>
@@ -1906,6 +1910,13 @@
                                 class="p-1.5 text-slate-400 hover:text-red-400 transition-colors rounded"
                                 title="Excluir Fatura"
                               ><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                              <button
+                                v-if="!inv.fechamentoId"
+                                @click="toggleInvoiceIgnored(inv)"
+                                class="p-1.5 transition-colors rounded"
+                                :class="inv.ignoredInClosing ? 'text-slate-400 hover:text-brand-500' : 'text-emerald-500 hover:text-slate-400'"
+                                :title="inv.ignoredInClosing ? 'Incluir em fechamentos' : 'Ignorar em fechamentos'"
+                              ><i :data-lucide="inv.ignoredInClosing ? 'eye-off' : 'eye'" class="w-3.5 h-3.5"></i></button>
                             </div>
                           </td>
                         </tr>
@@ -3121,6 +3132,16 @@
                     @blur="formatInputCurrency('newExpense.faturamento')"
                     class="w-full bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
+                  <div
+                    v-if="unlinkedPaidInvoices.count > 0"
+                    class="mt-2 flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg"
+                  >
+                    <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-500"></i>
+                    <span class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                      <span class="font-semibold">{{ unlinkedPaidInvoices.count }} fatura(s) paga(s)</span> elegíveis não atreladas a nenhum fechamento
+                      — total: <span class="font-semibold font-mono">{{ formatCurrency(unlinkedPaidInvoices.total) }}</span>
+                    </span>
+                  </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
@@ -3191,7 +3212,7 @@
                   </button>
                   <button
                     @click="saveNewExpense"
-                    class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 dark:text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
+                    class="px-5 py-2 rounded-lg text-sm font-medium text-slate-900 text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow"
                   >
                     Salvar Fechamento
                   </button>
@@ -3764,6 +3785,21 @@
             const client = this.clients.find(c => c.id === this.selectedClientId);
             if (!client) return null;
             return client.services.find(s => s.id === this.selectedInvoiceServiceId) || null;
+          },
+          unlinkedPaidInvoices() {
+            let count = 0;
+            let total = 0;
+            this.clients.forEach(c => {
+              (c.services || []).forEach(s => {
+                (s.invoices || []).forEach(inv => {
+                  if (inv.payment && !inv.fechamentoId && !inv.ignoredInClosing) {
+                    count++;
+                    total += this.getInvoiceTotal(inv);
+                  }
+                });
+              });
+            });
+            return { count, total };
           },
         },
         watch: {
@@ -4383,8 +4419,9 @@
                 };
               }
             } else {
+              const novoFechamentoId = this.generateId();
               this.expensesHistory.push({
-                id: this.generateId(),
+                id: novoFechamentoId,
                 month: this.newExpense.month,
                 faturamento,
                 das,
@@ -4396,9 +4433,20 @@
                 aliquotaEfetiva,
                 timestamp: Date.now(),
               });
+              // Link all eligible paid invoices to this new fechamento
+              this.clients.forEach(c => {
+                (c.services || []).forEach(s => {
+                  (s.invoices || []).forEach(inv => {
+                    if (inv.payment && !inv.fechamentoId && !inv.ignoredInClosing) {
+                      inv.fechamentoId = novoFechamentoId;
+                    }
+                  });
+                });
+              });
             }
 
             this.showNewExpenseModal = false;
+            this.saveData();
             this.refreshIcons();
           },
 
@@ -4611,6 +4659,7 @@
                       dueDate: dueDate,
                       baseAmount: this.calculateFinalPrice(service),
                       status: 'pending',
+                      ignoredInClosing: false,
                     });
                   }
                 } else if (service.type === 'recurring') {
@@ -4635,6 +4684,7 @@
                         dueDate: dueDate,
                         baseAmount: this.calculateFinalPrice(service),
                         status: 'pending',
+                        ignoredInClosing: false,
                       });
                     }
                     cursor = new Date(year, cursor.getMonth() + 1, 1);
@@ -4863,6 +4913,11 @@
             this.deleteParentEntityId = this.selectedInvoiceServiceId;
             this.openDeleteModal();
           },
+          toggleInvoiceIgnored(inv) {
+            inv.ignoredInClosing = !inv.ignoredInClosing;
+            this.saveData();
+            nextTick(() => { this.refreshIcons(); });
+          },
 
           // -- Auth --
           async login() {
@@ -4973,8 +5028,21 @@
                     }
                   });
                   this.clients = parsed.clients;
+                  // MIGRATION: Mark all pre-existing invoices (no fechamentoId, no ignoredInClosing set) as ignored in closing
+                  let migrationNeedsSave = false;
+                  this.clients.forEach(c => {
+                    (c.services || []).forEach(s => {
+                      (s.invoices || []).forEach(inv => {
+                        if (inv.ignoredInClosing === undefined) {
+                          inv.ignoredInClosing = true;
+                          migrationNeedsSave = true;
+                        }
+                      });
+                    });
+                  });
                   // Compute invoice statuses after loading and migration
                   this.computeAllInvoices();
+                  if (migrationNeedsSave) this.saveData();
                 }
                 if (parsed.expensesHistory) {
                   this.expensesHistory = parsed.expensesHistory;
